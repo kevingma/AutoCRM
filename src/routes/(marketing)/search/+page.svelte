@@ -16,8 +16,7 @@
     threshold: 0.3,
   }
 
-  let fuse: Fuse<Result> | undefined = $state()
-
+  let fuse
   let loading = $state(true)
   let error = $state(false)
   onMount(async () => {
@@ -29,7 +28,7 @@
       const searchData = await response.json()
       if (searchData && searchData.index && searchData.indexData) {
         const index = Fuse.parseIndex(searchData.index)
-        fuse = new Fuse<Result>(searchData.indexData, fuseOptions, index)
+        fuse = new Fuse(searchData.indexData, fuseOptions, index)
       }
     } catch (e) {
       console.error("Failed to load search data", e)
@@ -40,24 +39,15 @@
     }
   })
 
-  type Result = {
-    item: {
-      title: string
-      description: string
-      body: string
-      path: string
-    }
-  }
-  let results: Result[] = $state([])
-
-  // searchQuery is $page.url.hash minus the "#" at the beginning if present
+  let results = $state([])
   let searchQuery = $state(decodeURIComponent($page.url.hash.slice(1) ?? ""))
+
   $effect(() => {
     if (fuse) {
       results = fuse.search(searchQuery)
     }
   })
-  // Update the URL hash when searchQuery changes so the browser can bookmark/share the search results
+
   $effect(() => {
     if (browser && window.location.hash.slice(1) !== searchQuery) {
       goto("#" + searchQuery, { keepFocus: true })
@@ -87,8 +77,8 @@
 <svelte:window onkeydown={onKeyDown} />
 
 <svelte:head>
-  <title>Search</title>
-  <meta name="description" content="Search our website." />
+  <title>Search AutoCRM</title>
+  <meta name="description" content="Search the AutoCRM site." />
 </svelte:head>
 
 <div class="py-8 lg:py-12 px-6 max-w-lg mx-auto">
@@ -127,8 +117,9 @@
     <div class="text-center mt-10 text-accent text-xl">No results found</div>
     {#if dev}
       <div class="text-center mt-4 font-mono">
-        Development mode only message: if you're missing content, rebuild your
-        local search index with `npm run build`
+        Development mode only: rebuild your local search index with <code
+          >npm run build</code
+        >.
       </div>
     {/if}
   {/if}
@@ -151,6 +142,4 @@
       </a>
     {/each}
   </div>
-
-  <div></div>
 </div>

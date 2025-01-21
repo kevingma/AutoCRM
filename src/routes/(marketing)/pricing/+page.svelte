@@ -11,37 +11,38 @@
     header?: boolean
   }
 
+  // This is just an example table. Adjust as desired.
   const planFeatures: PlanFeatureRow[] = [
     {
-      name: "Section 1",
+      name: "Basic Features",
       header: true,
     },
     {
-      name: "Feature 1",
+      name: "AI-Suggested Replies",
       freeIncluded: true,
       proIncluded: true,
     },
     {
-      name: "Feature 2",
+      name: "Ticket Routing",
+      freeIncluded: true,
+      proIncluded: true,
+    },
+    {
+      name: "Analytics Dashboard",
       freeIncluded: false,
       proIncluded: true,
     },
     {
-      name: "Feature 3",
-      freeString: "3",
-      proString: "Unlimited",
-    },
-    {
-      name: "Section 2",
+      name: "Advanced",
       header: true,
     },
     {
-      name: "Feature 4",
-      freeIncluded: true,
+      name: "Custom Integrations",
+      freeIncluded: false,
       proIncluded: true,
     },
     {
-      name: "Feature 5",
+      name: "Priority Support",
       freeIncluded: false,
       proIncluded: true,
     },
@@ -49,14 +50,17 @@
 </script>
 
 <svelte:head>
-  <title>Pricing</title>
-  <meta name="description" content="Pricing - {WebsiteName}" />
+  <title>Pricing - AutoCRM</title>
+  <meta
+    name="description"
+    content="Choose the right plan for your AI-driven CRM needs."
+  />
 </svelte:head>
 
 <div class="min-h-[70vh] pb-8 pt-[5vh] px-4">
   <h1 class="text-3xl font-bold text-center">Pricing</h1>
   <h2 class="text-xl text-center text-slate-500 mt-1 pb-3">
-    Totally free, scale to millions of users
+    Scale your customer support with AI
   </h2>
 
   <div class="w-full my-8">
@@ -67,48 +71,49 @@
         <div class="collapse collapse-arrow join-item border border-primary">
           <input type="radio" name="faq-accordion" />
           <div class="collapse-title text-lg font-medium">
-            Is this template free to use?
-          </div>
-          <div class="collapse-content">
-            <p>Yup! This template is free to use for any project.</p>
-          </div>
-        </div>
-        <div class="collapse collapse-arrow join-item border border-primary">
-          <input type="radio" name="faq-accordion" />
-          <div class="collapse-title text-lg font-medium">
-            Why does a free template have a pricing page?
+            Is AutoCRM really powered by AI?
           </div>
           <div class="collapse-content">
             <p>
-              The pricing page is part of the boilerplate. It shows how the
-              pricing page integrates into the billing portal and the Stripe
-              Checkout flows.
+              Yes, we integrate generative AI to automate standard queries and
+              enhance your support workflow.
             </p>
           </div>
         </div>
         <div class="collapse collapse-arrow join-item border border-primary">
           <input type="radio" name="faq-accordion" />
           <div class="collapse-title text-lg font-medium">
-            What license is the template under?
+            How does the AI handle complex tickets?
           </div>
           <div class="collapse-content">
-            <p>The template is under the MIT license.</p>
+            <p>
+              AutoCRM flags complex tickets for human review, providing
+              suggested responses and additional context to help you resolve
+              them faster.
+            </p>
           </div>
         </div>
         <div class="collapse collapse-arrow join-item border border-primary">
           <input type="radio" name="faq-accordion" />
           <div class="collapse-title text-lg font-medium">
-            Can I try out purchase flows without real a credit card?
+            What if we need advanced integrations?
           </div>
           <div class="collapse-content">
             <p>
-              Our demo page <a href="https://saasstarter.work" class="link"
-                >SaasStarter.work</a
-              > has a functional demo page, using Stripe's test environment.
+              Our Pro plan includes custom integration support. We also offer
+              specialized consulting for deeper customizations.
             </p>
-            <p class="mt-4">
-              You can use the credit card number 4242 4242 4242 4242 with any
-              future expiry date to test the payment and upgrade flows.
+          </div>
+        </div>
+        <div class="collapse collapse-arrow join-item border border-primary">
+          <input type="radio" name="faq-accordion" />
+          <div class="collapse-title text-lg font-medium">
+            Can I upgrade or downgrade plans anytime?
+          </div>
+          <div class="collapse-content">
+            <p>
+              Yes. You can manage your subscription right from your account’s
+              billing section.
             </p>
           </div>
         </div>
@@ -129,11 +134,6 @@
             d="M16.417 10.283A7.917 7.917 0 1 1 8.5 2.366a7.916 7.916 0 0 1 7.917 7.917zm-4.105-4.498a.791.791 0 0 0-1.082.29l-3.828 6.63-1.733-2.08a.791.791 0 1 0-1.216 1.014l2.459 2.952a.792.792 0 0 0 .608.285.83.83 0 0 0 .068-.003.791.791 0 0 0 .618-.393L12.6 6.866a.791.791 0 0 0-.29-1.081z"
           />
         </symbol>
-      </defs>
-    </svg>
-
-    <svg style="display:none" version="2.0">
-      <defs>
         <symbol id="nocircle" viewBox="0 0 24 24" fill="currentColor">
           <path
             d="M12,2A10,10,0,1,0,22,12,10,10,0,0,0,12,2Zm4,11H8a1,1,0,0,1,0-2h8a1,1,0,0,1,0,2Z"
@@ -144,7 +144,7 @@
 
     <h1 class="text-2xl font-bold text-center mt-16">Plan Features</h1>
     <h2 class="text-xl text-center text-slate-500 mt-1 pb-3">
-      Example feature table
+      Compare what’s included
     </h2>
 
     <div class="overflow-visible mx-auto max-w-xl mt-4">

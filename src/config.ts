@@ -1,5 +1,5 @@
-export const WebsiteName: string = "SaaS Starter"
+export const WebsiteName: string = "AutoCRM"
 export const WebsiteBaseUrl: string = "https://saasstarter.work"
 export const WebsiteDescription: string =
-  "Open source, fast, and free to host SaaS template. Built with SvelteKit, Supabase, Stripe, Tailwind, DaisyUI, and Postgres"
+  "The AI-Powered CRM That Minimizes Your Workload"
 export const CreateProfileStep: boolean = true

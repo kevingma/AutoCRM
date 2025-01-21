@@ -79,17 +79,19 @@
   >
     <div class="px-6">
       <h1 class="text-2xl lg:text-4xl font-bold mb-4">Contact Us</h1>
-      <p class="text-lg">Talk to one of our service professionals to:</p>
+      <p class="text-lg">
+        Interested in how AutoCRM can reduce your support burden with AI? Fill
+        out the form to:
+      </p>
       <ul class="list-disc list-outside pl-6 py-4 space-y-1">
-        <li class="">Get a live demo</li>
-        <li class="">Discuss your specific needs</li>
+        <li>Request a personalized demo</li>
+        <li>Discuss specific support needs</li>
         <li>Get a quote</li>
-        <li>Answer any technical questions you have</li>
+        <li>Ask any technical questions</li>
       </ul>
-      <p>Once you complete the form, we'll reach out to you! *</p>
-      <p class="text-sm pt-8">
-        *Not really for this demo page, but you should say something like that
-        😉
+      <p>
+        Our team will review your request and follow up shortly with more
+        details!
       </p>
     </div>
   </div>
@@ -103,7 +105,9 @@
           class="card card-bordered shadow-lg py-6 px-6 mx-2 lg:mx-0 lg:p-6 mb-10"
         >
           <div class="text-2xl font-bold mb-4">Thank you!</div>
-          <p class="">We've received your message and will be in touch soon.</p>
+          <p>
+            We've received your message and will be in touch soon about AutoCRM.
+          </p>
         </div>
       </div>
     {:else}

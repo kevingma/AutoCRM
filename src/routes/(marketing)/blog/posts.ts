@@ -1,22 +1,24 @@
 export const blogInfo = {
-  name: "SaaS Starter Blog",
-  description: "A sample blog",
+  // CHANGED: was "SaaS Starter Blog"
+  name: "AutoCRM Blog",
+  description: "Our official blog with the latest updates from AutoCRM",
 }
 
 export type BlogPost = {
   link: string
-  date: string // date is a string 'YYYY-MM-DD'
+  date: string
   title: string
   description: string
-  parsedDate?: Date // Optional because it's added dynamically
+  parsedDate?: Date
 }
 
-// Update this list with the actual blog post list
-// Create a page in the "(posts)" directory for each entry
+// Updated the first blog post to remove template references
 const blogPosts: BlogPost[] = [
   {
-    title: "How we built a beautiful 41kb SaaS website with this template",
-    description: "How to use this template you to bootstrap your own site.",
+    // CHANGED: removed "with this template"
+    title: "How we built a 41kb AI CRM website",
+    // CHANGED: new description with no mention of "template"
+    description: "We share our approach for building a small, fast AI CRM site.",
     link: "/blog/how_we_built_our_41kb_saas_website",
     date: "2024-03-10",
   },
@@ -34,19 +36,18 @@ const blogPosts: BlogPost[] = [
   },
 ]
 
-// Parse post dates from strings to Date objects
+// (Rest of the file remains unchanged)
 for (const post of blogPosts) {
   if (!post.parsedDate) {
     const dateParts = post.date.split("-")
     post.parsedDate = new Date(
       parseInt(dateParts[0]),
       parseInt(dateParts[1]) - 1,
-      parseInt(dateParts[2]),
-    ) // Note: months are 0-based
+      parseInt(dateParts[2])
+    )
   }
 }
 
 export const sortedBlogPosts = blogPosts.sort(
-  (a: BlogPost, b: BlogPost) =>
-    (b.parsedDate?.getTime() ?? 0) - (a.parsedDate?.getTime() ?? 0),
+  (a, b) => (b.parsedDate?.getTime() ?? 0) - (a.parsedDate?.getTime() ?? 0)
 )
