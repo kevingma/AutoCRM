@@ -1,7 +1,6 @@
 <script lang="ts">
   import { applyAction, enhance } from "$app/forms"
   import type { SubmitFunction } from "@sveltejs/kit"
-  import "../../../../app.css"
 
   interface User {
     email: string
@@ -11,6 +10,7 @@
     full_name?: string
     company_name?: string
     website?: string
+    role?: string // New
   }
 
   interface Props {
@@ -19,13 +19,17 @@
   }
 
   let { data, form }: Props = $props()
-
   let { user, profile } = data
 
   let loading = $state(false)
+
+  // Existing fields
   let fullName: string = profile?.full_name ?? ""
   let companyName: string = profile?.company_name ?? ""
   let website: string = profile?.website ?? ""
+
+  // New field for role
+  let role: string = profile?.role ?? "customer"
 
   const fieldError = (liveForm: FormAccountUpdateResult, name: string) => {
     let errors = liveForm?.errorFields ?? []
@@ -58,10 +62,9 @@
         action="/account/api?/updateProfile"
         use:enhance={handleSubmit}
       >
+        <!-- Full Name -->
         <div class="mt-4">
-          <label for="fullName">
-            <span class="text-l text-center">Your Name</span>
-          </label>
+          <label for="fullName" class="text-l text-center">Your Name</label>
           <input
             id="fullName"
             name="fullName"
@@ -75,10 +78,11 @@
           />
         </div>
 
+        <!-- Company Name -->
         <div class="mt-4">
-          <label for="companyName">
-            <span class="text-l text-center">Company Name</span>
-          </label>
+          <label for="companyName" class="text-l text-center"
+            >Company Name</label
+          >
           <input
             id="companyName"
             name="companyName"
@@ -92,10 +96,10 @@
           />
         </div>
 
+        <!-- Website -->
         <div class="mt-4">
-          <label for="website">
-            <span class="text-l text-center">Company Website</span>
-          </label>
+          <label for="website" class="text-l text-center">Company Website</label
+          >
           <input
             id="website"
             name="website"
@@ -107,6 +111,28 @@
             value={form?.website ?? website}
             maxlength="50"
           />
+        </div>
+
+        <!-- Role (New) -->
+        <div class="mt-4">
+          <label for="role" class="text-l text-center">Role</label>
+          <select
+            id="role"
+            name="role"
+            class="{fieldError(form, 'role')
+              ? 'input-error'
+              : ''} mt-1 input input-bordered w-full max-w-xs"
+          >
+            <option value="customer" selected={role === "customer"}>
+              Customer
+            </option>
+            <option value="employee" selected={role === "employee"}>
+              Employee
+            </option>
+            <option value="administrator" selected={role === "administrator"}>
+              Administrator
+            </option>
+          </select>
         </div>
 
         {#if form?.errorMessage}

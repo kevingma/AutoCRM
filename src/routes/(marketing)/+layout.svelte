@@ -40,7 +40,8 @@
       </li>
     </ul>
     <div class="dropdown dropdown-end sm:hidden">
-      <label tabindex="0" class="btn btn-ghost btn-circle">
+      <!-- Changed from <label tabindex="0" ...> to <button ...> -->
+      <button class="btn btn-ghost btn-circle" aria-label="Open menu">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           class="h-5 w-5"
@@ -55,16 +56,16 @@
             d="M4 6h16M4 12h16M4 18h7"
           />
         </svg>
-      </label>
+      </button>
+
+      <!-- Removed tabindex="0" from the <ul> -->
       <ul
-        tabindex="0"
         class="menu menu-lg dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52 font-bold"
       >
         <li><a href="/blog">Blog</a></li>
         <li><a href="/pricing">Pricing</a></li>
         <li><a href="/account">Account</a></li>
         <li><a href="/search">Search</a></li>
-        <!-- Old link to GitHub removed here as well -->
       </ul>
     </div>
   </div>

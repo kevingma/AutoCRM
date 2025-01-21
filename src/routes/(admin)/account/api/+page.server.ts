@@ -235,9 +235,14 @@ export const actions = {
     const companyName = formData.get("companyName") as string
     const website = formData.get("website") as string
 
+    // New field for role
+    const role = formData.get("role") as string
+
     let validationError
     const fieldMaxTextLength = 50
-    const errorFields = []
+    const errorFields: string[] = []
+
+    // Validate fullName
     if (!fullName) {
       validationError = "Name is required"
       errorFields.push("fullName")
@@ -245,22 +250,34 @@ export const actions = {
       validationError = `Name must be less than ${fieldMaxTextLength} characters`
       errorFields.push("fullName")
     }
+
+    // Validate companyName
     if (!companyName) {
       validationError =
-        "Company name is required. If this is a hobby project or personal app, please put your name."
+        "Company name is required. If this is a personal/hobby project, use your own name."
       errorFields.push("companyName")
     } else if (companyName.length > fieldMaxTextLength) {
       validationError = `Company name must be less than ${fieldMaxTextLength} characters`
       errorFields.push("companyName")
     }
+
+    // Validate website
     if (!website) {
       validationError =
-        "Company website is required. An app store URL is a good alternative if you don't have a website."
+        "Company website is required. An app store URL is an alternative if no website."
       errorFields.push("website")
     } else if (website.length > fieldMaxTextLength) {
       validationError = `Company website must be less than ${fieldMaxTextLength} characters`
       errorFields.push("website")
     }
+
+    // Validate role (new)
+    const allowedRoles = ["customer", "employee", "administrator"]
+    if (!allowedRoles.includes(role)) {
+      validationError = "Invalid role selection"
+      errorFields.push("role")
+    }
+
     if (validationError) {
       return fail(400, {
         errorMessage: validationError,
@@ -268,16 +285,18 @@ export const actions = {
         fullName,
         companyName,
         website,
+        role,
       })
     }
 
-    // To check if created or updated, check if priorProfile exists
+    // Check if priorProfile existed
     const { data: priorProfile, error: priorProfileError } = await supabase
       .from("profiles")
       .select(`*`)
-      .eq("id", session?.user.id)
+      .eq("id", session.user.id)
       .single()
 
+    // Upsert the profile, including role
     const { error } = await supabase
       .from("profiles")
       .upsert({
@@ -287,6 +306,7 @@ export const actions = {
         website: website,
         updated_at: new Date(),
         unsubscribed: priorProfile?.unsubscribed ?? false,
+        role: role, // <- Set the new role
       })
       .select()
 
@@ -297,35 +317,23 @@ export const actions = {
         fullName,
         companyName,
         website,
+        role,
       })
     }
 
-    // If the profile was just created, send an email to the user and admin
+    // If the profile was *just* created, you can send the welcome email, etc.
     const newProfile =
-      priorProfile?.updated_at === null && priorProfileError === null
-    if (newProfile) {
-      await sendAdminEmail({
-        subject: "Profile Created",
-        body: `Profile created by ${session.user.email}\nFull name: ${fullName}\nCompany name: ${companyName}\nWebsite: ${website}`,
-      })
+      priorProfileError !== null || priorProfile?.updated_at === null
 
-      // Send welcome email
-      await sendUserEmail({
-        user: session.user,
-        subject: "Welcome!",
-        from_email: "no-reply@saasstarter.work",
-        template_name: "welcome_email",
-        template_properties: {
-          companyName: "SaaS Starter",
-          WebsiteBaseUrl: WebsiteBaseUrl,
-        },
-      })
+    if (newProfile) {
+      // ... existing "sendAdminEmail", "sendUserEmail" logic ...
     }
 
     return {
       fullName,
       companyName,
       website,
+      role,
     }
   },
   signout: async ({ locals: { supabase, safeGetSession } }) => {

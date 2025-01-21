@@ -1,11 +1,3 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
-
 export interface Database {
   public: {
     Tables: {
@@ -51,6 +43,7 @@ export interface Database {
           company_name: string | null
           website: string | null
           unsubscribed: boolean
+          role: string
         }
         Insert: {
           avatar_url?: string | null
@@ -60,6 +53,7 @@ export interface Database {
           company_name?: string | null
           website?: string | null
           unsubscribed: boolean
+          role?: string
         }
         Update: {
           avatar_url?: string | null
@@ -68,7 +62,8 @@ export interface Database {
           updated_at?: string | null
           company_name?: string | null
           website?: string | null
-          unsubscribed: boolean
+          unsubscribed?: boolean
+          role?: string
         }
         Relationships: [
           {
@@ -76,7 +71,7 @@ export interface Database {
             columns: ["id"]
             referencedRelation: "users"
             referencedColumns: ["id"]
-          },
+          }
         ]
       }
       stripe_customers: {
@@ -101,7 +96,51 @@ export interface Database {
             columns: ["user_id"]
             referencedRelation: "users"
             referencedColumns: ["id"]
-          },
+          }
+        ]
+      }
+      /* --- Added tickets table below --- */
+      tickets: {
+        Row: {
+          id: string
+          user_id: string
+          ticket_id: string
+          title: string
+          description: string
+          status: string
+          created_at: string
+          updated_at: string
+          closed_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          ticket_id?: string
+          title: string
+          description: string
+          status?: string
+          created_at?: string
+          updated_at?: string
+          closed_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          ticket_id?: string
+          title?: string
+          description?: string
+          status?: string
+          created_at?: string
+          updated_at?: string
+          closed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tickets_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
         ]
       }
     }
