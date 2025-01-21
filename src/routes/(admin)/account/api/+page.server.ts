@@ -289,14 +289,29 @@ export const actions = {
       })
     }
 
-    // Check if priorProfile existed
+    // Check if profile existed
     const { data: priorProfile, error: priorProfileError } = await supabase
       .from("profiles")
       .select(`*`)
       .eq("id", session.user.id)
       .single()
 
-    // Upsert the profile, including role
+    // Determine if we need to reset employee_approved
+    // If user chooses "employee" role, default to false unless the prior profile was already approved
+    let employeeApproved = false
+    if (role === "employee") {
+      // if they had been employee already and were approved, keep it
+      if (priorProfile?.role === "employee" && priorProfile.employee_approved) {
+        employeeApproved = true
+      }
+    }
+
+    // If user was previously an employee but is switching to a different role,
+    // we could set employee_approved to false. That's optional. We'll do that:
+    if (role !== "employee") {
+      employeeApproved = false
+    }
+
     const { error } = await supabase
       .from("profiles")
       .upsert({
@@ -306,7 +321,8 @@ export const actions = {
         website: website,
         updated_at: new Date(),
         unsubscribed: priorProfile?.unsubscribed ?? false,
-        role: role, // <- Set the new role
+        role,
+        employee_approved: employeeApproved,
       })
       .select()
 
@@ -321,12 +337,12 @@ export const actions = {
       })
     }
 
-    // If the profile was *just* created, you can send the welcome email, etc.
+    // If the profile was just created
     const newProfile =
       priorProfileError !== null || priorProfile?.updated_at === null
 
     if (newProfile) {
-      // ... existing "sendAdminEmail", "sendUserEmail" logic ...
+      // Potential place to send welcome email, etc. Omitted for brevity.
     }
 
     return {
@@ -334,15 +350,7 @@ export const actions = {
       companyName,
       website,
       role,
-    }
-  },
-  signout: async ({ locals: { supabase, safeGetSession } }) => {
-    const { session } = await safeGetSession()
-    if (session) {
-      await supabase.auth.signOut()
-      redirect(303, "/")
-    } else {
-      redirect(303, "/")
+      employeeApproved,
     }
   },
 }

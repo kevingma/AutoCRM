@@ -10,20 +10,22 @@
 
   let { children }: Props = $props()
 
+  // Create the writable store
   const adminSectionStore = writable("")
-  setContext("adminSection", adminSectionStore)
-  let adminSection: string | undefined
 
+  // Provide this store to child routes via context
+  setContext("adminSection", adminSectionStore)
+
+  // Derive a local reactive variable so we can compare in the template
+  const adminSectionValue = $derived($adminSectionStore)
+
+  // Close the drawer on mobile
   function closeDrawer(): void {
     const adminDrawer = document.getElementById(
       "admin-drawer",
     ) as HTMLInputElement
     adminDrawer.checked = false
   }
-
-  adminSectionStore.subscribe((value) => {
-    adminSection = value
-  })
 </script>
 
 <div class="drawer lg:drawer-open">
@@ -75,7 +77,7 @@
       <li>
         <a
           href="/account"
-          class={adminSection === "home" ? "active" : ""}
+          class={adminSectionValue === "home" ? "active" : ""}
           onclick={closeDrawer}
         >
           <svg
@@ -95,11 +97,10 @@
           Home
         </a>
       </li>
-      <!-- New Tickets link -->
       <li>
         <a
           href="/account/tickets"
-          class={adminSection === "tickets" ? "active" : ""}
+          class={adminSectionValue === "tickets" ? "active" : ""}
           onclick={closeDrawer}
         >
           <svg
@@ -122,7 +123,7 @@
       <li>
         <a
           href="/account/billing"
-          class={adminSection === "billing" ? "active" : ""}
+          class={adminSectionValue === "billing" ? "active" : ""}
           onclick={closeDrawer}
         >
           <svg
@@ -141,7 +142,7 @@
       <li>
         <a
           href="/account/settings"
-          class={adminSection === "settings" ? "active" : ""}
+          class={adminSectionValue === "settings" ? "active" : ""}
           onclick={closeDrawer}
         >
           <svg class="h-5 w-5" viewBox="0 0 24 24" stroke="none" fill="none">

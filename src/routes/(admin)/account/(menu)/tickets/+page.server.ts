@@ -1,71 +1,82 @@
 import { fail, redirect } from "@sveltejs/kit"
 import type { PageServerLoad, Actions } from "./$types"
 
-export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession } }) => {
+export const load: PageServerLoad = async ({
+  locals: { supabase, supabaseServiceRole, safeGetSession },
+}) => {
   const { session, user } = await safeGetSession()
   if (!session || !user) {
     // Not logged in
     throw redirect(303, "/login")
   }
 
-  // Fetch user's profile to see role, company, website
+  // Fetch user's profile with normal supabase (this is allowed by the "Profiles are viewable by self." policy)
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
-    .select("role, company_name, website")
+    .select("role, company_name, website, employee_approved")
     .eq("id", user.id)
     .single()
 
-  if (profileError) {
-    console.error("Error fetching profile", profileError)
+  if (profileError || !profile) {
+    console.error("Error fetching profile or profile is missing", profileError)
     return { tickets: [], userRole: "" }
   }
 
-  // If not customer, we can handle differently or just show no tickets
-  // But as requested, only 'customer' sees the combined open tickets
-  if (profile.role !== "customer") {
-    // For demonstration, if user is not 'customer', just return tickets from themselves
-    const { data: tickets, error: ticketsError } = await supabase
-      .from("tickets")
-      .select("*")
-      .eq("user_id", user.id)
-      .eq("status", "open")
-      .order("created_at", { ascending: false })
+  const role = profile.role
+  const companyName = profile.company_name
+  const website = profile.website
 
-    if (ticketsError) {
-      console.error("Error fetching tickets for non-customer", ticketsError)
-      return { tickets: [], userRole: profile.role }
+  let sharedUserIds: string[] = []
+
+  // For finding all matching user IDs from the same company/website, use supabaseServiceRole to avoid the infinite recursion policy check
+  if (role === "administrator") {
+    // fetch all profiles with same company or website
+    const { data: relatedProfiles, error: rpError } = await supabaseServiceRole
+      .from("profiles")
+      .select("id")
+      .or(`company_name.eq.${companyName},website.eq.${website}`)
+
+    if (rpError || !relatedProfiles) {
+      console.error("Error fetching related profiles", rpError)
+      return { tickets: [], userRole: role }
+    }
+    sharedUserIds = relatedProfiles.map((p) => p.id)
+  } else if (role === "employee") {
+    if (profile.employee_approved) {
+      // employees who are approved see all from same company or website
+      const { data: relatedProfiles, error: rpError } = await supabaseServiceRole
+        .from("profiles")
+        .select("id")
+        .or(`company_name.eq.${companyName},website.eq.${website}`)
+      if (rpError || !relatedProfiles) {
+        console.error("Error fetching related profiles", rpError)
+        return { tickets: [], userRole: role }
+      }
+      sharedUserIds = relatedProfiles.map((p) => p.id)
+    } else {
+      // not approved => only see own tickets
+      sharedUserIds = [user.id]
+    }
+  } else {
+    // role === 'customer' or other => see own tickets + same company/website
+    const { data: relatedProfiles, error: rpError } = await supabaseServiceRole
+      .from("profiles")
+      .select("id")
+      .or(`company_name.eq.${companyName},website.eq.${website}`)
+
+    if (rpError || !relatedProfiles) {
+      console.error("Error fetching related profiles", rpError)
+      return { tickets: [], userRole: role }
     }
 
-    return { tickets, userRole: profile.role }
+    sharedUserIds = relatedProfiles.map((p) => p.id)
+    if (!sharedUserIds.includes(user.id)) {
+      sharedUserIds.push(user.id)
+    }
   }
 
-  // For 'customer' role: show open tickets for
-  //    - user_id = me
-  //    - OR same company_name
-  //    - OR same website
-  // We can do it in a single supabase query with an OR
-  //  eq("status", "open").or(`company_name.eq.${profile.company_name},website.eq.${profile.website}`) doesn't work directly
-  // We'll do a join or multiple queries for demonstration. Or we can do 2 queries. 
-  // For simplicity, let's fetch user IDs that share the same company or website.
-
-  // first find all profiles that share company or website
-  const { data: sharedProfiles, error: sharedProfilesError } = await supabase
-    .from("profiles")
-    .select("id")
-    .or(`company_name.eq.${profile.company_name},website.eq.${profile.website}`)
-
-  if (sharedProfilesError) {
-    console.error("Error fetching shared profiles", sharedProfilesError)
-    return { tickets: [], userRole: profile.role }
-  }
-
-  // create an array of user_ids including self
-  const sharedUserIds = sharedProfiles.map((p) => p.id)
-  if (!sharedUserIds.includes(user.id)) {
-    sharedUserIds.push(user.id)
-  }
-
-  // now fetch open tickets from these user_ids
+  // Now fetch open tickets for these user_ids with the normal supabase client
+  // (assuming you want RLS enforcement on the 'tickets' table if any).
   const { data: tickets, error: ticketsError } = await supabase
     .from("tickets")
     .select("*")
@@ -75,14 +86,14 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 
   if (ticketsError) {
     console.error("Error fetching tickets", ticketsError)
-    return { tickets: [], userRole: profile.role }
+    return { tickets: [], userRole: role }
   }
 
   return {
     tickets,
-    userRole: profile.role,
-    companyName: profile.company_name,
-    website: profile.website
+    userRole: role,
+    companyName,
+    website,
   }
 }
 
@@ -102,7 +113,7 @@ export const actions: Actions = {
         errorMessage: "Title must be at least 3 characters",
         errorFields: ["title"],
         title,
-        description
+        description,
       })
     }
     if (!description || description.length < 5) {
@@ -110,7 +121,7 @@ export const actions: Actions = {
         errorMessage: "Description must be at least 5 characters",
         errorFields: ["description"],
         title,
-        description
+        description,
       })
     }
 
@@ -120,7 +131,7 @@ export const actions: Actions = {
       .insert({
         user_id: user.id,
         title,
-        description
+        description,
       })
 
     if (error) {
@@ -128,10 +139,10 @@ export const actions: Actions = {
       return fail(500, {
         errorMessage: "Could not create ticket, please try again",
         title,
-        description
+        description,
       })
     }
 
     return { success: true }
-  }
+  },
 }

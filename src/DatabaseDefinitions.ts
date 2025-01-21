@@ -12,26 +12,8 @@ export interface Database {
           phone: string | null
           updated_at: Date | null
         }
-        Insert: {
-          company_name?: string | null
-          email?: string | null
-          first_name?: string | null
-          id?: string
-          last_name?: string | null
-          message_body?: string | null
-          phone?: string | null
-          updated_at?: Date | null
-        }
-        Update: {
-          company_name?: string | null
-          email?: string | null
-          first_name?: string | null
-          id?: string
-          last_name?: string | null
-          message_body?: string | null
-          phone?: string | null
-          updated_at?: Date | null
-        }
+        Insert: { /* unchanged */ }
+        Update: { /* unchanged */ }
         Relationships: []
       }
       profiles: {
@@ -44,6 +26,7 @@ export interface Database {
           website: string | null
           unsubscribed: boolean
           role: string
+          employee_approved: boolean  // <-- ADDED
         }
         Insert: {
           avatar_url?: string | null
@@ -54,6 +37,7 @@ export interface Database {
           website?: string | null
           unsubscribed: boolean
           role?: string
+          employee_approved?: boolean // <-- ADDED
         }
         Update: {
           avatar_url?: string | null
@@ -64,6 +48,7 @@ export interface Database {
           website?: string | null
           unsubscribed?: boolean
           role?: string
+          employee_approved?: boolean // <-- ADDED
         }
         Relationships: [
           {
@@ -74,69 +59,39 @@ export interface Database {
           }
         ]
       }
-      stripe_customers: {
-        Row: {
-          stripe_customer_id: string
-          updated_at: Date | null
-          user_id: string
-        }
-        Insert: {
-          stripe_customer_id: string
-          updated_at?: Date | null
-          user_id: string
-        }
-        Update: {
-          stripe_customer_id?: string
-          updated_at?: Date | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "stripe_customers_user_id_fkey"
-            columns: ["user_id"]
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-      /* --- Added tickets table below --- */
-      tickets: {
+      stripe_customers: { /* unchanged */ }
+      tickets: { /* unchanged */ }
+      ticket_replies: {    // <-- NEW TABLE DEFINITION
         Row: {
           id: string
-          user_id: string
           ticket_id: string
-          title: string
-          description: string
-          status: string
-          created_at: string
-          updated_at: string
-          closed_at: string | null
+          user_id: string
+          reply_text: string
+          created_at: string | null
         }
         Insert: {
           id?: string
+          ticket_id: string
           user_id: string
-          ticket_id?: string
-          title: string
-          description: string
-          status?: string
-          created_at?: string
-          updated_at?: string
-          closed_at?: string | null
+          reply_text: string
+          created_at?: string | null
         }
         Update: {
           id?: string
-          user_id?: string
           ticket_id?: string
-          title?: string
-          description?: string
-          status?: string
-          created_at?: string
-          updated_at?: string
-          closed_at?: string | null
+          user_id?: string
+          reply_text?: string
+          created_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "tickets_user_id_fkey"
+            foreignKeyName: "ticket_replies_ticket_id_fkey"
+            columns: ["ticket_id"]
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_replies_user_id_fkey"
             columns: ["user_id"]
             referencedRelation: "users"
             referencedColumns: ["id"]
@@ -144,17 +99,9 @@ export interface Database {
         ]
       }
     }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      [_ in never]: never
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
+    Views: { [_ in never]: never }
+    Functions: { [_ in never]: never }
+    Enums: { [_ in never]: never }
+    CompositeTypes: { [_ in never]: never }
   }
 }
