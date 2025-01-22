@@ -2,6 +2,7 @@ import { fail, redirect } from "@sveltejs/kit"
 import type { PageServerLoad, Actions } from "./$types"
 
 export const load: PageServerLoad = async ({
+  url,
   locals: { supabase, supabaseServiceRole, safeGetSession },
 }) => {
   const { session, user } = await safeGetSession()
@@ -10,7 +11,7 @@ export const load: PageServerLoad = async ({
     throw redirect(303, "/login")
   }
 
-  // Fetch user's profile with normal supabase (this is allowed by the "Profiles are viewable by self." policy)
+  // Fetch user's profile
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("role, company_name, website, employee_approved")
@@ -18,72 +19,62 @@ export const load: PageServerLoad = async ({
     .single()
 
   if (profileError || !profile) {
-    console.error("Error fetching profile or profile is missing", profileError)
+    console.error("Error fetching profile or missing", profileError)
     return { tickets: [], userRole: "" }
   }
 
   const role = profile.role
   const companyName = profile.company_name
   const website = profile.website
-
   let sharedUserIds: string[] = []
 
-  // For finding all matching user IDs from the same company/website, use supabaseServiceRole to avoid the infinite recursion policy check
+  // Admin or (approved) employee => see same-company tickets. Otherwise see your own & same company/website.
   if (role === "administrator") {
-    // fetch all profiles with same company or website
-    const { data: relatedProfiles, error: rpError } = await supabaseServiceRole
+    const { data: relatedProfiles } = await supabaseServiceRole
       .from("profiles")
       .select("id")
       .or(`company_name.eq.${companyName},website.eq.${website}`)
-
-    if (rpError || !relatedProfiles) {
-      console.error("Error fetching related profiles", rpError)
-      return { tickets: [], userRole: role }
-    }
-    sharedUserIds = relatedProfiles.map((p) => p.id)
+    sharedUserIds = relatedProfiles?.map((p) => p.id) ?? []
   } else if (role === "employee") {
     if (profile.employee_approved) {
-      // employees who are approved see all from same company or website
-      const { data: relatedProfiles, error: rpError } = await supabaseServiceRole
+      const { data: relatedProfiles } = await supabaseServiceRole
         .from("profiles")
         .select("id")
         .or(`company_name.eq.${companyName},website.eq.${website}`)
-      if (rpError || !relatedProfiles) {
-        console.error("Error fetching related profiles", rpError)
-        return { tickets: [], userRole: role }
-      }
-      sharedUserIds = relatedProfiles.map((p) => p.id)
+      sharedUserIds = relatedProfiles?.map((p) => p.id) ?? []
     } else {
-      // not approved => only see own tickets
+      // not approved => only own
       sharedUserIds = [user.id]
     }
   } else {
-    // role === 'customer' or other => see own tickets + same company/website
-    const { data: relatedProfiles, error: rpError } = await supabaseServiceRole
+    // role === 'customer'
+    const { data: relatedProfiles } = await supabaseServiceRole
       .from("profiles")
       .select("id")
       .or(`company_name.eq.${companyName},website.eq.${website}`)
-
-    if (rpError || !relatedProfiles) {
-      console.error("Error fetching related profiles", rpError)
-      return { tickets: [], userRole: role }
-    }
-
-    sharedUserIds = relatedProfiles.map((p) => p.id)
+    sharedUserIds = relatedProfiles?.map((p) => p.id) ?? []
     if (!sharedUserIds.includes(user.id)) {
       sharedUserIds.push(user.id)
     }
   }
 
-  // Now fetch open tickets for these user_ids with the normal supabase client
-  // (assuming you want RLS enforcement on the 'tickets' table if any).
-  const { data: tickets, error: ticketsError } = await supabase
-    .from("tickets")
-    .select("*")
-    .in("user_id", sharedUserIds)
-    .eq("status", "open")
-    .order("created_at", { ascending: false })
+  // Filter by status and sort
+  const statusParam = url.searchParams.get("status") || "open"
+  const sortParam = url.searchParams.get("sort") || "desc"
+  const ascending = sortParam === "asc"
 
+  let query = supabase.from("tickets").select("*").in("user_id", sharedUserIds)
+
+  if (statusParam === "all") {
+    // no filter
+  } else if (statusParam === "open_and_in_progress") {
+    query = query.in("status", ["open", "in_progress"])
+  } else {
+    query = query.eq("status", statusParam)
+  }
+  query = query.order("created_at", { ascending })
+
+  const { data: tickets, error: ticketsError } = await query
   if (ticketsError) {
     console.error("Error fetching tickets", ticketsError)
     return { tickets: [], userRole: role }
@@ -94,6 +85,9 @@ export const load: PageServerLoad = async ({
     userRole: role,
     companyName,
     website,
+    statusParam,
+    sortParam,
+    form: null,
   }
 }
 
@@ -125,14 +119,36 @@ export const actions: Actions = {
       })
     }
 
-    // Insert new ticket
-    const { error } = await supabase
-      .from("tickets")
-      .insert({
-        user_id: user.id,
-        title,
-        description,
-      })
+    // Optional new fields
+    const priority = (formData.get("priority") as string) || null
+    const tagsRaw = formData.get("tags") as string
+    const tags = tagsRaw ? tagsRaw.split(",").map((t) => t.trim()) : null
+    const customFieldsRaw = formData.get("custom_fields") as string
+    let customFields = null
+    if (customFieldsRaw) {
+      try {
+        customFields = JSON.parse(customFieldsRaw)
+      } catch {
+        return fail(400, {
+          errorMessage: "Invalid JSON in custom_fields",
+          errorFields: ["custom_fields"],
+          title,
+          description,
+          priority,
+          tagsRaw,
+          customFieldsRaw,
+        })
+      }
+    }
+
+    const { error } = await supabase.from("tickets").insert({
+      user_id: user.id,
+      title,
+      description,
+      priority,
+      tags,
+      custom_fields: customFields,
+    })
 
     if (error) {
       console.error("Error creating ticket", error)
@@ -142,6 +158,86 @@ export const actions: Actions = {
         description,
       })
     }
+
+    return { success: true }
+  },
+
+  // New action to update ticket fields (status, priority, tags, etc.)
+  updateTicket: async ({ request, locals: { supabase, safeGetSession } }) => {
+    const { session } = await safeGetSession()
+    if (!session) {
+      throw redirect(303, "/login")
+    }
+    const formData = await request.formData()
+    const ticketId = formData.get("ticket_id") as string
+    if (!ticketId) {
+      return fail(400, { errorMessage: "Missing ticket_id" })
+    }
+
+    const status = formData.get("status") as string
+    const priority = formData.get("priority") as string
+    const tagsRaw = formData.get("tags") as string
+    let tags = null
+    if (tagsRaw) {
+      tags = tagsRaw.split(",").map((t) => t.trim())
+    }
+    const customFieldsRaw = formData.get("custom_fields") as string
+    let customFields = null
+    if (customFieldsRaw) {
+      try {
+        customFields = JSON.parse(customFieldsRaw)
+      } catch {
+        return fail(400, { errorMessage: "Invalid JSON in custom_fields" })
+      }
+    }
+
+    const fieldsToUpdate: Record<string, unknown> = {}
+    if (status !== undefined) fieldsToUpdate.status = status
+    if (priority !== undefined) fieldsToUpdate.priority = priority
+    if (tags !== undefined) fieldsToUpdate.tags = tags
+    if (customFields !== undefined) fieldsToUpdate.custom_fields = customFields
+
+    const { error } = await supabase
+      .from("tickets")
+      .update(fieldsToUpdate)
+      .eq("id", ticketId)
+
+    if (error) {
+      console.error("Error updating ticket", error)
+      return fail(500, { errorMessage: "Could not update ticket" })
+    }
+    return { success: true }
+  },
+
+  // New action to add a reply, including internal notes
+  addReply: async ({ request, locals: { supabase, safeGetSession } }) => {
+    const { session, user } = await safeGetSession()
+    if (!session || !user) {
+      throw redirect(303, "/login")
+    }
+    const formData = await request.formData()
+    const ticketId = formData.get("ticket_id") as string
+    const replyText = formData.get("reply_text") as string
+    const isInternal = formData.get("is_internal") === "true"
+
+    if (!ticketId) {
+      return fail(400, { errorMessage: "Missing ticket_id" })
+    }
+    if (!replyText || replyText.length < 2) {
+      return fail(400, { errorMessage: "Reply text must be at least 2 chars" })
+    }
+
+    const { error } = await supabase.from("ticket_replies").insert({
+      ticket_id: ticketId,
+      user_id: user.id,
+      reply_text: replyText,
+      is_internal: isInternal,
+    })
+
+    if (error) {
+      console.error("Error adding reply", error)
+      return fail(500, { errorMessage: "Could not add reply" })
+    }onTestFailed
 
     return { success: true }
   },

@@ -235,8 +235,8 @@ export const actions = {
     const companyName = formData.get("companyName") as string
     const website = formData.get("website") as string
 
-    // New field for role
-    const role = formData.get("role") as string
+    // Attempt to read role from form; if absent, keep prior role
+    let formRole = formData.get("role") as string | null
 
     let validationError
     const fieldMaxTextLength = 50
@@ -271,6 +271,26 @@ export const actions = {
       errorFields.push("website")
     }
 
+    // Fetch existing profile to handle role updates or fallback
+    const { data: priorProfile, error: priorProfileError } = await supabase
+      .from("profiles")
+      .select(`*`)
+      .eq("id", session.user.id)
+      .single()
+
+    if (!priorProfile && priorProfileError) {
+      // If there's no prior profile, we'll treat it as a new profile scenario
+      // but let's still avoid letting "role" be empty. We'll default to "customer" if not provided.
+      console.error("No prior profile found. Creating new profile.")
+    }
+
+    // If the form didn't supply a role (e.g. user editing profile but not role), fall back to old role (or "customer" if new profile).
+    let role = formRole
+      ? formRole
+      : priorProfile
+      ? priorProfile.role
+      : "customer"
+
     // Validate role (new)
     const allowedRoles = ["customer", "employee", "administrator"]
     if (!allowedRoles.includes(role)) {
@@ -289,28 +309,18 @@ export const actions = {
       })
     }
 
-    // Check if profile existed
-    const { data: priorProfile, error: priorProfileError } = await supabase
-      .from("profiles")
-      .select(`*`)
-      .eq("id", session.user.id)
-      .single()
-
-    // Determine if we need to reset employee_approved
-    // If user chooses "employee" role, default to false unless the prior profile was already approved
+    // Determine if we need to reset or maintain employee_approved
     let employeeApproved = false
     if (role === "employee") {
-      // if they had been employee already and were approved, keep it
-      if (priorProfile?.role === "employee" && priorProfile.employee_approved) {
+      // Keep prior approval if they were already an approved employee
+      if (
+        priorProfile?.role === "employee" &&
+        priorProfile.employee_approved === true
+      ) {
         employeeApproved = true
       }
     }
-
-    // If user was previously an employee but is switching to a different role,
-    // we could set employee_approved to false. That's optional. We'll do that:
-    if (role !== "employee") {
-      employeeApproved = false
-    }
+    // If not employee, it stays false
 
     const { error } = await supabase
       .from("profiles")
@@ -342,7 +352,8 @@ export const actions = {
       priorProfileError !== null || priorProfile?.updated_at === null
 
     if (newProfile) {
-      // Potential place to send welcome email, etc. Omitted for brevity.
+      // Potential place to send a welcome email, etc.
+      // e.g., sendUserEmail({ user, subject: "Welcome!", ...})
     }
 
     return {
