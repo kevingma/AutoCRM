@@ -45,6 +45,8 @@ export interface Database {
           unsubscribed: boolean
           role: string
           employee_approved: boolean
+          // Add this field:
+          customer_approved: boolean
         }
         Insert: {
           avatar_url?: string | null
@@ -56,6 +58,8 @@ export interface Database {
           unsubscribed?: boolean
           role?: string
           employee_approved?: boolean
+          // Add this field:
+          customer_approved?: boolean
         }
         Update: {
           avatar_url?: string | null
@@ -67,6 +71,8 @@ export interface Database {
           unsubscribed?: boolean
           role?: string
           employee_approved?: boolean
+          // Add this field:
+          customer_approved?: boolean
         }
         Relationships: [
           {

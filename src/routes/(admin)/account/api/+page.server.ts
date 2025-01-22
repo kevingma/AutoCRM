@@ -234,8 +234,6 @@ export const actions = {
     const fullName = formData.get("fullName") as string
     const companyName = formData.get("companyName") as string
     const website = formData.get("website") as string
-
-    // Attempt to read role from form; if absent, keep prior role
     let formRole = formData.get("role") as string | null
 
     let validationError
@@ -271,27 +269,22 @@ export const actions = {
       errorFields.push("website")
     }
 
-    // Fetch existing profile to handle role updates or fallback
+    // Fetch existing profile
     const { data: priorProfile, error: priorProfileError } = await supabase
       .from("profiles")
       .select(`*`)
       .eq("id", session.user.id)
       .single()
 
-    if (!priorProfile && priorProfileError) {
-      // If there's no prior profile, we'll treat it as a new profile scenario
-      // but let's still avoid letting "role" be empty. We'll default to "customer" if not provided.
-      console.error("No prior profile found. Creating new profile.")
-    }
+    // If no prior profile, treat as new
+    let oldRole = priorProfile?.role ?? "customer"
+    let oldEmployeeApproved = priorProfile?.employee_approved ?? false
+    let oldCustomerApproved = priorProfile?.customer_approved ?? false
 
-    // If the form didn't supply a role (e.g. user editing profile but not role), fall back to old role (or "customer" if new profile).
-    let role = formRole
-      ? formRole
-      : priorProfile
-      ? priorProfile.role
-      : "customer"
+    // If the form didn't supply a role, fallback to prior or "customer"
+    let role = formRole ? formRole : oldRole
 
-    // Validate role (new)
+    // Validate role
     const allowedRoles = ["customer", "employee", "administrator"]
     if (!allowedRoles.includes(role)) {
       validationError = "Invalid role selection"
@@ -309,18 +302,22 @@ export const actions = {
       })
     }
 
-    // Determine if we need to reset or maintain employee_approved
+    // Decide employee_approved / customer_approved
     let employeeApproved = false
+    let customerApproved = false
+
     if (role === "employee") {
-      // Keep prior approval if they were already an approved employee
-      if (
-        priorProfile?.role === "employee" &&
-        priorProfile.employee_approved === true
-      ) {
+      // keep prior if old was employee and already approved
+      if (oldRole === "employee" && oldEmployeeApproved) {
         employeeApproved = true
       }
+    } else if (role === "customer") {
+      // keep prior if old was customer and already approved
+      if (oldRole === "customer" && oldCustomerApproved) {
+        customerApproved = true
+      }
     }
-    // If not employee, it stays false
+    // (administrator doesn't need approval, so no booleans needed)
 
     const { error } = await supabase
       .from("profiles")
@@ -328,11 +325,12 @@ export const actions = {
         id: user.id,
         full_name: fullName,
         company_name: companyName,
-        website: website,
+        website,
         updated_at: new Date(),
         unsubscribed: priorProfile?.unsubscribed ?? false,
         role,
         employee_approved: employeeApproved,
+        customer_approved: customerApproved, // NEW
       })
       .select()
 
@@ -352,8 +350,8 @@ export const actions = {
       priorProfileError !== null || priorProfile?.updated_at === null
 
     if (newProfile) {
-      // Potential place to send a welcome email, etc.
-      // e.g., sendUserEmail({ user, subject: "Welcome!", ...})
+      // Example place to send a welcome email
+      // sendUserEmail({ ... })
     }
 
     return {
@@ -362,6 +360,7 @@ export const actions = {
       website,
       role,
       employeeApproved,
+      customerApproved,
     }
   },
 }

@@ -19,8 +19,8 @@
     userRole: string
     companyName?: string
     website?: string
-    statusParam: string // NEW
-    sortParam: string // NEW
+    statusParam: string
+    sortParam: string
     form?: {
       errorMessage?: string
       errorFields?: string[]
@@ -73,7 +73,7 @@
     </p>
   {/if}
 
-  <!-- NEW: Form to filter by status and sort by created_at -->
+  <!-- Filter form -->
   <form method="GET" class="flex flex-wrap gap-4 items-end mb-4">
     <div>
       <label for="status" class="block font-semibold mb-1">Status</label>
@@ -82,38 +82,35 @@
         >
         <option
           value="in_progress"
-          selected={data.statusParam === "in_progress"}
+          selected={data.statusParam === "in_progress"}>In Progress</option
         >
-          In Progress
-        </option>
         <option
           value="open_and_in_progress"
           selected={data.statusParam === "open_and_in_progress"}
         >
           Open & In Progress
         </option>
-        <option value="closed" selected={data.statusParam === "closed"}>
-          Closed
-        </option>
-        <option value="all" selected={data.statusParam === "all"}> All </option>
+        <option value="closed" selected={data.statusParam === "closed"}
+          >Closed</option
+        >
+        <option value="all" selected={data.statusParam === "all"}>All</option>
       </select>
     </div>
 
     <div>
       <label for="sort" class="block font-semibold mb-1">Sort</label>
       <select id="sort" name="sort" class="select select-bordered">
-        <option value="desc" selected={data.sortParam === "desc"}>
-          Newest First
-        </option>
-        <option value="asc" selected={data.sortParam === "asc"}>
-          Oldest First
-        </option>
+        <option value="desc" selected={data.sortParam === "desc"}
+          >Newest First</option
+        >
+        <option value="asc" selected={data.sortParam === "asc"}
+          >Oldest First</option
+        >
       </select>
     </div>
 
     <button type="submit" class="btn btn-primary btn-sm">Apply</button>
   </form>
-  <!-- END NEW FILTER FORM -->
 
   <div class="overflow-x-auto">
     <table class="table w-full">
@@ -123,12 +120,13 @@
           <th class="bg-base-200">Description</th>
           <th class="bg-base-200">Created</th>
           <th class="bg-base-200">Status</th>
+          <th class="bg-base-200"></th>
         </tr>
       </thead>
       <tbody>
         {#if data.tickets.length === 0}
           <tr>
-            <td colspan="4" class="text-center text-gray-600 py-4">
+            <td colspan="5" class="text-center text-gray-600 py-4">
               No matching tickets found
             </td>
           </tr>
@@ -141,6 +139,13 @@
                 {new Date(ticket.created_at).toLocaleString()}
               </td>
               <td class="uppercase font-semibold">{ticket.status}</td>
+              <!-- NEW: Link to detail page -->
+              <td>
+                <a
+                  href={`/account/tickets/${ticket.id}`}
+                  class="link link-primary">View</a
+                >
+              </td>
             </tr>
           {/each}
         {/if}

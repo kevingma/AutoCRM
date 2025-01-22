@@ -2,63 +2,127 @@
   import { getContext } from "svelte"
   import type { Writable } from "svelte/store"
 
+  /**
+   * The store below is used to highlight this page in the admin drawer,
+   * so we can keep it as is.
+   */
   let adminSection: Writable<string> = getContext("adminSection")
   adminSection.set("home")
+
+  /**
+   * Data returned from +page.server.ts:
+   *  - userRole: string
+   *  - stats: { activeTicketsCount: number; ticketsResolvedTodayCount: number }
+   *  - recentTickets: Array<{ id: string; title: string; status: string; created_at: string | null }>
+   */
+  export let data: {
+    userRole: string
+    stats: {
+      activeTicketsCount: number
+      ticketsResolvedTodayCount: number
+    }
+    recentTickets: {
+      id: string
+      title: string
+      status: string
+      created_at: string | null
+    }[]
+  }
 </script>
 
 <svelte:head>
-  <title>Account</title>
+  <title>Account Dashboard</title>
 </svelte:head>
 
-<h1 class="text-2xl font-bold mb-1">Dashboard</h1>
+<!-- If not employee or admin, show simpler placeholders or a friendly message -->
+{#if data.userRole !== "employee" && data.userRole !== "administrator"}
+  <h1 class="text-2xl font-bold mb-3">Dashboard</h1>
+  <p class="mb-6">Welcome to your account area!</p>
 
-<div class="my-6">
-  <h1 class="text-xl font-bold mb-1">Users</h1>
-  <div class="stats shadow stats-vertical sm:stats-horizontal sm:w-[420px]">
-    <div class="stat place-items-center">
-      <div class="stat-title">Downloads</div>
-      <div class="stat-value">31K</div>
-      <div class="stat-desc">↗︎ 546 (2%)</div>
-    </div>
-
-    <div class="stat place-items-center">
-      <div class="stat-title">Users</div>
-      <div class="stat-value text-secondary">4,200</div>
-      <div class="stat-desc">↗︎ 40 (2%)</div>
-    </div>
-  </div>
-</div>
-
-<div class="my-6">
-  <h1 class="text-xl font-bold mb-1">Accounts</h1>
-  <div class="stats shadow stats-vertical sm:stats-horizontal sm:w-[420px]">
-    <div class="stat place-items-center">
-      <div class="stat-title">New Registers</div>
-      <div class="stat-value">1,200</div>
-      <div class="stat-desc">↘︎ 90 (14%)</div>
-    </div>
-
-    <div class="stat place-items-center">
-      <div class="stat-title">Churned Accounts</div>
-      <div class="stat-value">42</div>
-      <div class="stat-desc">↘︎ 6 (12%)</div>
+  <!-- Old placeholder stats; feel free to remove or keep -->
+  <div class="my-6">
+    <h2 class="text-xl font-bold mb-1">Users</h2>
+    <div class="stats shadow stats-vertical sm:stats-horizontal sm:w-[420px]">
+      <div class="stat place-items-center">
+        <div class="stat-title">Downloads</div>
+        <div class="stat-value">31K</div>
+        <div class="stat-desc">↗︎ 546 (2%)</div>
+      </div>
+      <div class="stat place-items-center">
+        <div class="stat-title">Users</div>
+        <div class="stat-value text-secondary">4,200</div>
+        <div class="stat-desc">↗︎ 40 (2%)</div>
+      </div>
     </div>
   </div>
-</div>
-
-<div class="my-6">
-  <h1 class="text-xl font-bold mb-1">Revenue</h1>
-  <div class="stats shadow stats-vertical sm:stats-horizontal sm:w-[420px]">
-    <div class="stat place-items-center">
-      <div class="stat-title text-success">Revenue</div>
-      <div class="stat-value text-success">$4200</div>
-      <div class="stat-desc">↗︎ $180 (4%)</div>
-    </div>
-
-    <div class="stat place-items-center">
-      <div class="stat-title">New Subscribers</div>
-      <div class="stat-value">16</div>
-      <div class="stat-desc">↘︎ 1 (%7)</div>
+  <div class="my-6">
+    <h2 class="text-xl font-bold mb-1">Accounts</h2>
+    <div class="stats shadow stats-vertical sm:stats-horizontal sm:w-[420px]">
+      <div class="stat place-items-center">
+        <div class="stat-title">New Registers</div>
+        <div class="stat-value">1,200</div>
+        <div class="stat-desc">↘︎ 90 (14%)</div>
+      </div>
+      <div class="stat place-items-center">
+        <div class="stat-title">Churned Accounts</div>
+        <div class="stat-value">42</div>
+        <div class="stat-desc">↘︎ 6 (12%)</div>
+      </div>
     </div>
   </div>
-</div>
+  <div class="my-6">
+    <h2 class="text-xl font-bold mb-1">Revenue</h2>
+    <div class="stats shadow stats-vertical sm:stats-horizontal sm:w-[420px]">
+      <div class="stat place-items-center">
+        <div class="stat-title text-success">Revenue</div>
+        <div class="stat-value text-success">$4200</div>
+        <div class="stat-desc">↗︎ $180 (4%)</div>
+      </div>
+      <div class="stat place-items-center">
+        <div class="stat-title">New Subscribers</div>
+        <div class="stat-value">16</div>
+        <div class="stat-desc">↘︎ 1 (%7)</div>
+      </div>
+    </div>
+  </div>
+{:else}
+  <!-- For employee or administrator role, show the new stats -->
+  <h1 class="text-2xl font-bold mb-3">Employee Dashboard</h1>
+
+  <div class="stats shadow stats-vertical sm:stats-horizontal sm:w-[420px]">
+    <div class="stat place-items-center">
+      <div class="stat-title">Active Tickets</div>
+      <div class="stat-value">{data.stats.activeTicketsCount}</div>
+      <div class="stat-desc">Open/In Progress, has your replies</div>
+    </div>
+
+    <div class="stat place-items-center">
+      <div class="stat-title">Resolved Today</div>
+      <div class="stat-value">{data.stats.ticketsResolvedTodayCount}</div>
+      <div class="stat-desc">Closed with your reply after midnight</div>
+    </div>
+  </div>
+
+  <!-- Show recent tickets the user was involved in -->
+  <div class="mt-8">
+    <h2 class="text-xl font-bold mb-2">Recent Tickets You Contributed To</h2>
+    {#if data.recentTickets.length === 0}
+      <p class="text-sm">No recent tickets found.</p>
+    {:else}
+      <ul class="list-disc list-inside">
+        {#each data.recentTickets as t}
+          <li class="my-1">
+            <a href={"/account/tickets/" + t.id} class="link link-primary"
+              >{t.title} (status: {t.status})</a
+            >
+            {#if t.created_at}
+              <span class="text-sm text-gray-500 ml-1">
+                — {new Date(t.created_at).toLocaleString()}
+              </span>
+            {/if}
+          </li>
+        {/each}
+      </ul>
+    {/if}
+  </div>
+{/if}

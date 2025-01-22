@@ -2,11 +2,6 @@
   import { page } from "$app/stores"
   import { enhance, applyAction } from "$app/forms"
   import type { SubmitFunction } from "@sveltejs/kit"
-  import { getContext } from "svelte"
-  import type { Writable } from "svelte/store"
-
-  let adminSection: Writable<string> = getContext("adminSection")
-  adminSection.set("tickets")
 
   export let data: {
     ticket: {
@@ -15,83 +10,237 @@
       title: string
       description: string
       status: string
-      created_at: string
-    } | null
+      priority?: string | null
+      tags?: string[] | null
+      created_at?: string | null
+    }
     replies: {
       id: string
       user_id: string
       reply_text: string
-      created_at: string
+      is_internal: boolean
+      created_at?: string | null
     }[]
-    canReply: boolean
-    form?: {
-      errorMessage?: string
-    }
+    userRole: string
   }
 
-  const handleReply: SubmitFunction = () => {
+  let ticket = data.ticket
+  let replies = data.replies
+  let userRole = data.userRole
+
+  let replyLoading = false
+  let replyError: string | null = null
+  let updateLoading = false
+  let updateError: string | null = null
+
+  // Add reply
+  const handleAddReply: SubmitFunction = () => {
+    replyLoading = true
+    replyError = null
     return async ({ update, result }) => {
       await update({ reset: false })
-      if (result.type === "success") {
-        // reload
+      replyLoading = false
+      if (result.type === "failure") {
+        replyError = result.data?.errorMessage || "Unknown error"
+      } else if (result.type === "success") {
+        // reload the page to see new reply
         location.reload()
       }
     }
   }
+
+  // Update ticket (like status, priority, tags)
+  const handleUpdateTicket: SubmitFunction = () => {
+    updateLoading = true
+    updateError = null
+    return async ({ update, result }) => {
+      await update({ reset: false })
+      updateLoading = false
+      if (result.type === "failure") {
+        updateError = result.data?.errorMessage || "Unknown error"
+      } else if (result.type === "success") {
+        // reload the page to see updated fields
+        location.reload()
+      }
+    }
+  }
+
+  // Only employees or admins see the "is_internal" checkbox
+  function canMarkInternal() {
+    return userRole === "administrator" || userRole === "employee"
+  }
+
+  // Only employees or admins can see the "edit ticket" form
+  function canUpdateTicket() {
+    return userRole === "administrator" || userRole === "employee"
+  }
 </script>
 
 <svelte:head>
-  <title>Ticket Detail</title>
+  <title>Ticket Details</title>
 </svelte:head>
 
-{#if !data.ticket}
-  <h2 class="text-xl">Ticket not found or no permission</h2>
-{:else}
-  <h2 class="text-2xl font-bold mb-2">Ticket: {data.ticket.title}</h2>
-  <div class="bg-base-200 p-4 rounded">
-    <p class="text-sm text-gray-700 mb-2">
-      Created at: {new Date(data.ticket.created_at).toLocaleString()}
-    </p>
-    <p class="text-base mb-3">{data.ticket.description}</p>
-    <p class="text-sm font-semibold">
-      Status: {data.ticket.status.toUpperCase()}
-    </p>
-  </div>
+<div class="max-w-3xl">
+  <h1 class="text-2xl font-bold mb-3">Ticket Details</h1>
 
-  <h3 class="text-xl font-bold mt-6">Replies</h3>
-  {#if data.replies.length === 0}
-    <div class="text-sm text-gray-500 my-2">No replies yet.</div>
-  {:else}
-    <div class="space-y-3 mt-3">
-      {#each data.replies as r}
-        <div class="bg-base-200 p-2 rounded">
-          <div class="text-sm italic text-gray-600">
-            {new Date(r.created_at).toLocaleString()}
-          </div>
-          <div class="mt-1">{r.reply_text}</div>
-        </div>
-      {/each}
-    </div>
-  {/if}
-
-  {#if data.canReply}
-    <form method="POST" action="?/reply" use:enhance={handleReply} class="mt-8">
-      <textarea
-        name="reply_text"
-        rows="3"
-        class="textarea textarea-bordered w-full"
-        placeholder="Type your reply here..."
-      ></textarea>
-      {#if data.form?.errorMessage}
-        <div class="text-red-600 font-semibold mt-1">
-          {data.form.errorMessage}
+  <div class="card shadow mb-6">
+    <div class="card-body">
+      <h2 class="card-title">{ticket.title}</h2>
+      <div class="text-sm text-slate-600">
+        Status: <span class="font-bold">{ticket.status}</span>
+      </div>
+      {#if ticket.priority}
+        <div class="text-sm text-slate-600">
+          Priority: <span class="font-bold">{ticket.priority}</span>
         </div>
       {/if}
-      <button class="btn btn-primary mt-2">Submit Reply</button>
-    </form>
-  {:else}
-    <div class="text-sm text-gray-500 mt-4">
-      You do not have permission to reply to this ticket.
+      {#if ticket.tags && ticket.tags.length > 0}
+        <div class="text-sm text-slate-600">
+          Tags:
+          {#each ticket.tags as tag, i}
+            <span class="badge badge-outline badge-sm ml-1">{tag}</span>
+          {/each}
+        </div>
+      {/if}
+      <p class="mt-4">{ticket.description}</p>
+      {#if ticket.created_at}
+        <div class="text-xs text-slate-500 mt-2">
+          Created: {new Date(ticket.created_at).toLocaleString()}
+        </div>
+      {/if}
+    </div>
+  </div>
+
+  <h2 class="text-xl font-bold mb-2">Replies</h2>
+  <div class="space-y-3">
+    {#each replies as reply}
+      <div class="card shadow">
+        <div class="card-body">
+          <div class="text-sm text-slate-600">
+            {#if reply.is_internal}
+              <span class="badge badge-warning mr-2">Internal Note</span>
+            {/if}
+            <span class="italic">User: {reply.user_id}</span>
+            {#if reply.created_at}
+              <span class="ml-2 text-xs text-slate-500"
+                >{new Date(reply.created_at).toLocaleString()}</span
+              >
+            {/if}
+          </div>
+          <p class="mt-2">{reply.reply_text}</p>
+        </div>
+      </div>
+    {/each}
+  </div>
+
+  <!-- Add a new reply -->
+  <div class="mt-8 card shadow">
+    <div class="card-body">
+      <h3 class="card-title">Add Reply</h3>
+      <form
+        method="POST"
+        action="?/addReply"
+        use:enhance={handleAddReply}
+        class="mt-2"
+      >
+        <textarea
+          name="reply_text"
+          rows="3"
+          placeholder="Your reply"
+          class="textarea textarea-bordered w-full mb-3"
+        ></textarea>
+        {#if canMarkInternal()}
+          <label class="label cursor-pointer justify-start gap-3">
+            <span class="label-text">Mark as internal note?</span>
+            <input
+              type="checkbox"
+              name="is_internal"
+              value="true"
+              class="checkbox"
+            />
+          </label>
+        {/if}
+        {#if replyError}
+          <div class="text-red-600">{replyError}</div>
+        {/if}
+        <button
+          class="btn btn-primary btn-sm"
+          type="submit"
+          disabled={replyLoading}
+        >
+          {replyLoading ? "Saving..." : "Add Reply"}
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Update ticket fields (only employees or admins) -->
+  {#if canUpdateTicket()}
+    <div class="mt-8 card shadow">
+      <div class="card-body">
+        <h3 class="card-title">Update Ticket</h3>
+        <form
+          method="POST"
+          action="?/updateTicket"
+          use:enhance={handleUpdateTicket}
+          class="mt-2"
+        >
+          <label class="block mb-2">
+            <span class="text-sm font-semibold">Status</span>
+            <select
+              name="status"
+              class="select select-bordered w-full max-w-xs mt-1"
+            >
+              <option value="open" selected={ticket.status === "open"}
+                >Open</option
+              >
+              <option
+                value="in_progress"
+                selected={ticket.status === "in_progress"}
+              >
+                In Progress
+              </option>
+              <option value="closed" selected={ticket.status === "closed"}
+                >Closed</option
+              >
+            </select>
+          </label>
+
+          <label class="block mb-2">
+            <span class="text-sm font-semibold">Priority</span>
+            <input
+              type="text"
+              name="priority"
+              value={ticket.priority ?? ""}
+              placeholder="e.g. High, Medium, Low"
+              class="input input-bordered w-full max-w-xs mt-1"
+            />
+          </label>
+
+          <label class="block mb-2">
+            <span class="text-sm font-semibold">Tags (comma separated)</span>
+            <input
+              type="text"
+              name="tags"
+              value={ticket.tags?.join(",") ?? ""}
+              placeholder="e.g. bug,urgent"
+              class="input input-bordered w-full max-w-xs mt-1"
+            />
+          </label>
+
+          {#if updateError}
+            <div class="text-red-600 mt-2">{updateError}</div>
+          {/if}
+
+          <button
+            class="btn btn-accent btn-sm mt-2"
+            type="submit"
+            disabled={updateLoading}
+          >
+            {updateLoading ? "Saving..." : "Update Ticket"}
+          </button>
+        </form>
+      </div>
     </div>
   {/if}
-{/if}
+</div>

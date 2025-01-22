@@ -98,6 +98,32 @@ export const actions: Actions = {
       throw redirect(303, "/login")
     }
 
+    // Fetch user profile to check approvals
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("role, employee_approved, customer_approved")
+      .eq("id", user.id)
+      .single()
+
+    if (profileError || !profile) {
+      console.error("Error fetching profile or missing", profileError)
+      return fail(500, { errorMessage: "Unable to verify your profile" })
+    }
+
+    // For employees or customers, ensure they are approved before allowing ticket creation
+    if (profile.role === "employee" && !profile.employee_approved) {
+      return fail(403, {
+        errorMessage:
+          "Your employee account has not been approved by an administrator.",
+      })
+    }
+    if (profile.role === "customer" && !profile.customer_approved) {
+      return fail(403, {
+        errorMessage:
+          "Your customer account has not been approved by an administrator.",
+      })
+    }
+
     const formData = await request.formData()
     const title = formData.get("title") as string
     const description = formData.get("description") as string
