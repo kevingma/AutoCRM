@@ -1,5 +1,5 @@
 import { fail, redirect } from "@sveltejs/kit"
-import type { PageServerLoad, Actions } from "./$types"
+import type { PageServerLoad } from "./$types"
 
 export const load: PageServerLoad = async ({
   url,
@@ -58,9 +58,10 @@ export const load: PageServerLoad = async ({
     }
   }
 
-  // Filter by status and sort
+  // Filter by status and priority, then sort by time
   const statusParam = url.searchParams.get("status") || "open"
   const sortParam = url.searchParams.get("sort") || "desc"
+  const priorityParam = url.searchParams.get("priority") || "all"
   const ascending = sortParam === "asc"
 
   let query = supabase.from("tickets").select("*").in("user_id", sharedUserIds)
@@ -72,6 +73,11 @@ export const load: PageServerLoad = async ({
   } else {
     query = query.eq("status", statusParam)
   }
+
+  if (priorityParam !== "all") {
+    query = query.eq("priority", priorityParam)
+  }
+
   query = query.order("created_at", { ascending })
 
   const { data: tickets, error: ticketsError } = await query
@@ -87,184 +93,8 @@ export const load: PageServerLoad = async ({
     website,
     statusParam,
     sortParam,
-    form: null,
+    priorityParam,
   }
 }
 
-export const actions: Actions = {
-  createTicket: async ({ request, locals: { supabase, safeGetSession } }) => {
-    const { session, user } = await safeGetSession()
-    if (!session || !user) {
-      throw redirect(303, "/login")
-    }
-
-    // Fetch user profile to check approvals
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("role, employee_approved, customer_approved")
-      .eq("id", user.id)
-      .single()
-
-    if (profileError || !profile) {
-      console.error("Error fetching profile or missing", profileError)
-      return fail(500, { errorMessage: "Unable to verify your profile" })
-    }
-
-    // For employees or customers, ensure they are approved before allowing ticket creation
-    if (profile.role === "employee" && !profile.employee_approved) {
-      return fail(403, {
-        errorMessage:
-          "Your employee account has not been approved by an administrator.",
-      })
-    }
-    if (profile.role === "customer" && !profile.customer_approved) {
-      return fail(403, {
-        errorMessage:
-          "Your customer account has not been approved by an administrator.",
-      })
-    }
-
-    const formData = await request.formData()
-    const title = formData.get("title") as string
-    const description = formData.get("description") as string
-
-    if (!title || title.length < 3) {
-      return fail(400, {
-        errorMessage: "Title must be at least 3 characters",
-        errorFields: ["title"],
-        title,
-        description,
-      })
-    }
-    if (!description || description.length < 5) {
-      return fail(400, {
-        errorMessage: "Description must be at least 5 characters",
-        errorFields: ["description"],
-        title,
-        description,
-      })
-    }
-
-    // Optional new fields
-    const priority = (formData.get("priority") as string) || null
-    const tagsRaw = formData.get("tags") as string
-    const tags = tagsRaw ? tagsRaw.split(",").map((t) => t.trim()) : null
-    const customFieldsRaw = formData.get("custom_fields") as string
-    let customFields = null
-    if (customFieldsRaw) {
-      try {
-        customFields = JSON.parse(customFieldsRaw)
-      } catch {
-        return fail(400, {
-          errorMessage: "Invalid JSON in custom_fields",
-          errorFields: ["custom_fields"],
-          title,
-          description,
-          priority,
-          tagsRaw,
-          customFieldsRaw,
-        })
-      }
-    }
-
-    const { error } = await supabase.from("tickets").insert({
-      user_id: user.id,
-      title,
-      description,
-      priority,
-      tags,
-      custom_fields: customFields,
-    })
-
-    if (error) {
-      console.error("Error creating ticket", error)
-      return fail(500, {
-        errorMessage: "Could not create ticket, please try again",
-        title,
-        description,
-      })
-    }
-
-    return { success: true }
-  },
-
-  // New action to update ticket fields (status, priority, tags, etc.)
-  updateTicket: async ({ request, locals: { supabase, safeGetSession } }) => {
-    const { session } = await safeGetSession()
-    if (!session) {
-      throw redirect(303, "/login")
-    }
-    const formData = await request.formData()
-    const ticketId = formData.get("ticket_id") as string
-    if (!ticketId) {
-      return fail(400, { errorMessage: "Missing ticket_id" })
-    }
-
-    const status = formData.get("status") as string
-    const priority = formData.get("priority") as string
-    const tagsRaw = formData.get("tags") as string
-    let tags = null
-    if (tagsRaw) {
-      tags = tagsRaw.split(",").map((t) => t.trim())
-    }
-    const customFieldsRaw = formData.get("custom_fields") as string
-    let customFields = null
-    if (customFieldsRaw) {
-      try {
-        customFields = JSON.parse(customFieldsRaw)
-      } catch {
-        return fail(400, { errorMessage: "Invalid JSON in custom_fields" })
-      }
-    }
-
-    const fieldsToUpdate: Record<string, unknown> = {}
-    if (status !== undefined) fieldsToUpdate.status = status
-    if (priority !== undefined) fieldsToUpdate.priority = priority
-    if (tags !== undefined) fieldsToUpdate.tags = tags
-    if (customFields !== undefined) fieldsToUpdate.custom_fields = customFields
-
-    const { error } = await supabase
-      .from("tickets")
-      .update(fieldsToUpdate)
-      .eq("id", ticketId)
-
-    if (error) {
-      console.error("Error updating ticket", error)
-      return fail(500, { errorMessage: "Could not update ticket" })
-    }
-    return { success: true }
-  },
-
-  // New action to add a reply, including internal notes
-  addReply: async ({ request, locals: { supabase, safeGetSession } }) => {
-    const { session, user } = await safeGetSession()
-    if (!session || !user) {
-      throw redirect(303, "/login")
-    }
-    const formData = await request.formData()
-    const ticketId = formData.get("ticket_id") as string
-    const replyText = formData.get("reply_text") as string
-    const isInternal = formData.get("is_internal") === "true"
-
-    if (!ticketId) {
-      return fail(400, { errorMessage: "Missing ticket_id" })
-    }
-    if (!replyText || replyText.length < 2) {
-      return fail(400, { errorMessage: "Reply text must be at least 2 chars" })
-    }
-
-    const { error } = await supabase.from("ticket_replies").insert({
-      ticket_id: ticketId,
-      user_id: user.id,
-      reply_text: replyText,
-      is_internal: isInternal,
-    })
-
-    if (error) {
-      console.error("Error adding reply", error)
-      return fail(500, { errorMessage: "Could not add reply" })
-    }onTestFailed
-
-    return { success: true }
-  },
-}
+// Removed createTicket action from this file. That action is now in /tickets/new/+page.server.ts

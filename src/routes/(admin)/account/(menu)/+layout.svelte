@@ -63,8 +63,9 @@
 
   <div class="drawer-side">
     <label for="admin-drawer" class="drawer-overlay"></label>
+    <!-- Sidebar now narrower (w-64) and text smaller (text-sm), removing menu-lg -->
     <ul
-      class="menu menu-lg p-4 w-80 min-h-full bg-base-100 lg:border-r text-primary"
+      class="menu p-4 w-64 min-h-full bg-base-100 lg:border-r text-sm text-primary"
     >
       <li>
         <div
@@ -145,7 +146,6 @@
           class={adminSectionValue === "approvals" ? "active" : ""}
           onclick={closeDrawer}
         >
-          <!-- Example icon (user-check) -->
           <svg
             class="h-5 w-5"
             fill="none"
@@ -162,7 +162,8 @@
           Approve Users
         </a>
       </li>
-      <li>
+      <!-- Settings and Sign Out together at the bottom -->
+      <li class="mt-auto flex flex-row items-center gap-4">
         <a
           href="/account/settings"
           class={adminSectionValue === "settings" ? "active" : ""}
@@ -190,10 +191,9 @@
           </svg>
           Settings
         </a>
-      </li>
-
-      <li class="mt-auto">
-        <a href="/account/sign_out" class="mt-auto text-base">Sign Out</a>
+        <a href="/account/sign_out" class="text-base" onclick={closeDrawer}>
+          Sign Out
+        </a>
       </li>
     </ul>
   </div>
