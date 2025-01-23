@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { enhance } from "$app/forms" // removed applyAction
+  import { enhance } from "$app/forms"
   import type { SubmitFunction } from "@sveltejs/kit"
 
   export let data: {
@@ -90,7 +90,7 @@
       {#if ticket.tags && ticket.tags.length > 0}
         <div class="text-sm text-slate-600">
           Tags:
-          {#each ticket.tags as tag, i}
+          {#each ticket.tags as tag}
             <span class="badge badge-outline badge-sm ml-1">{tag}</span>
           {/each}
         </div>
@@ -106,6 +106,7 @@
 
   <h2 class="text-xl font-bold mb-2">Replies</h2>
   <div class="space-y-3">
+    <!-- Removed ', i' from the loop to eliminate unused variable -->
     {#each replies as reply}
       <div class="card shadow">
         <div class="card-body">
@@ -126,7 +127,6 @@
     {/each}
   </div>
 
-  <!-- Add a new reply -->
   <div class="mt-8 card shadow">
     <div class="card-body">
       <h3 class="card-title">Add Reply</h3>
@@ -167,7 +167,6 @@
     </div>
   </div>
 
-  <!-- Update ticket fields (only employees or admins) -->
   {#if canUpdateTicket()}
     <div class="mt-8 card shadow">
       <div class="card-body">

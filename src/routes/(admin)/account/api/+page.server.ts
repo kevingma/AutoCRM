@@ -229,16 +229,16 @@ export const actions = {
     }
 
     const formData = await request.formData()
+    // Switched from let to const below (lines indicated in the error)
     const fullName = formData.get("fullName") as string
     const companyName = formData.get("companyName") as string
     const website = formData.get("website") as string
-    let formRole = formData.get("role") as string | null
+    const formRole = formData.get("role") as string | null
 
     let validationError
     const fieldMaxTextLength = 50
     const errorFields: string[] = []
 
-    // Validate fullName
     if (!fullName) {
       validationError = "Name is required"
       errorFields.push("fullName")
@@ -247,7 +247,6 @@ export const actions = {
       errorFields.push("fullName")
     }
 
-    // Validate companyName
     if (!companyName) {
       validationError =
         "Company name is required. If this is a personal/hobby project, use your own name."
@@ -257,7 +256,6 @@ export const actions = {
       errorFields.push("companyName")
     }
 
-    // Validate website
     if (!website) {
       validationError =
         "Company website is required. An app store URL is an alternative if no website."
@@ -267,22 +265,20 @@ export const actions = {
       errorFields.push("website")
     }
 
-    // Fetch existing profile
     const { data: priorProfile, error: priorProfileError } = await supabase
       .from("profiles")
       .select(`*`)
       .eq("id", session.user.id)
       .single()
 
-    // If no prior profile, treat as new
-    let oldRole = priorProfile?.role ?? "customer"
-    let oldEmployeeApproved = priorProfile?.employee_approved ?? false
-    let oldCustomerApproved = priorProfile?.customer_approved ?? false
+    // Replaced let with const:
+    const oldRole = priorProfile?.role ?? "customer"
+    const oldEmployeeApproved = priorProfile?.employee_approved ?? false
+    const oldCustomerApproved = priorProfile?.customer_approved ?? false
 
     // If the form didn't supply a role, fallback to prior or "customer"
-    let role = formRole ? formRole : oldRole
+    const role = formRole ? formRole : oldRole
 
-    // Validate role
     const allowedRoles = ["customer", "employee", "administrator"]
     if (!allowedRoles.includes(role)) {
       validationError = "Invalid role selection"
@@ -305,17 +301,15 @@ export const actions = {
     let customerApproved = false
 
     if (role === "employee") {
-      // keep prior if old was employee and already approved
       if (oldRole === "employee" && oldEmployeeApproved) {
         employeeApproved = true
       }
     } else if (role === "customer") {
-      // keep prior if old was customer and already approved
       if (oldRole === "customer" && oldCustomerApproved) {
         customerApproved = true
       }
     }
-    // (administrator doesn't need approval, so no booleans needed)
+    // if role === 'administrator', no approvals needed
 
     const { error } = await supabase
       .from("profiles")
@@ -328,7 +322,7 @@ export const actions = {
         unsubscribed: priorProfile?.unsubscribed ?? false,
         role,
         employee_approved: employeeApproved,
-        customer_approved: customerApproved, // NEW
+        customer_approved: customerApproved,
       })
       .select()
 
@@ -343,12 +337,9 @@ export const actions = {
       })
     }
 
-    // If the profile was just created
-    const newProfile =
-      priorProfileError !== null || priorProfile?.updated_at === null
-
-    if (newProfile) {
-      // Example place to send a welcome email
+    const newProfileCreated = priorProfileError !== null || !priorProfile?.updated_at
+    if (newProfileCreated) {
+      // Optionally send a welcome email here
       // sendUserEmail({ ... })
     }
 
