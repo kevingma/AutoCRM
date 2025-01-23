@@ -1,4 +1,12 @@
 <script lang="ts">
+  import { getContext } from "svelte"
+  import type { Writable } from "svelte/store"
+
+  // ADD THESE LINES:
+  let adminSection: Writable<string> = getContext("adminSection")
+  adminSection.set("knowledge_base")
+  // END ADD
+
   // Example knowledge base articles or FAQs
   interface KBEntry {
     question: string

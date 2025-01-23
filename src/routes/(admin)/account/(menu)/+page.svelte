@@ -2,24 +2,15 @@
   import { getContext } from "svelte"
   import type { Writable } from "svelte/store"
 
-  /**
-   * The store below is used to highlight this page in the admin drawer,
-   * so we can keep it as is.
-   */
   let adminSection: Writable<string> = getContext("adminSection")
   adminSection.set("home")
 
-  /**
-   * Data returned from +page.server.ts:
-   *  - userRole: string
-   *  - stats: { activeTicketsCount: number; ticketsResolvedTodayCount: number }
-   *  - recentTickets: Array<{ id: string; title: string; status: string; created_at: string | null }>
-   */
   export let data: {
     userRole: string
     stats: {
       activeTicketsCount: number
       ticketsResolvedTodayCount: number
+      feedbackReceivedCount: number
     }
     recentTickets: {
       id: string
@@ -39,7 +30,7 @@
   <h1 class="text-2xl font-bold mb-3">Dashboard</h1>
   <p class="mb-6">Welcome to your account area!</p>
 
-  <!-- Old placeholder stats; feel free to remove or keep -->
+  <!-- Example placeholders (unchanged) -->
   <div class="my-6">
     <h2 class="text-xl font-bold mb-1">Users</h2>
     <div class="stats shadow stats-vertical sm:stats-horizontal sm:w-[420px]">
@@ -86,7 +77,7 @@
     </div>
   </div>
 {:else}
-  <!-- For employee or administrator role, show the new stats -->
+  <!-- Employee or Administrator -->
   <h1 class="text-2xl font-bold mb-3">Employee Dashboard</h1>
 
   <div class="stats shadow stats-vertical sm:stats-horizontal sm:w-[420px]">
@@ -95,15 +86,22 @@
       <div class="stat-value">{data.stats.activeTicketsCount}</div>
       <div class="stat-desc">Open/In Progress, has your replies</div>
     </div>
-
     <div class="stat place-items-center">
       <div class="stat-title">Resolved Today</div>
       <div class="stat-value">{data.stats.ticketsResolvedTodayCount}</div>
       <div class="stat-desc">Closed with your reply after midnight</div>
     </div>
+    <!-- NEW: Link to feedback page -->
+    <a
+      href="/account/employee_feedback"
+      class="stat place-items-center hover:bg-base-200"
+    >
+      <div class="stat-title">Feedback Received</div>
+      <div class="stat-value">{data.stats.feedbackReceivedCount}</div>
+      <div class="stat-desc">Click to see feedback</div>
+    </a>
   </div>
 
-  <!-- Show recent tickets the user was involved in -->
   <div class="mt-8">
     <h2 class="text-xl font-bold mb-2">Recent Tickets You Contributed To</h2>
     {#if data.recentTickets.length === 0}
@@ -112,9 +110,9 @@
       <ul class="list-disc list-inside">
         {#each data.recentTickets as t}
           <li class="my-1">
-            <a href={"/account/tickets/" + t.id} class="link link-primary"
-              >{t.title} (status: {t.status})</a
-            >
+            <a href={"/account/tickets/" + t.id} class="link link-primary">
+              {t.title} (status: {t.status})
+            </a>
             {#if t.created_at}
               <span class="text-sm text-gray-500 ml-1">
                 — {new Date(t.created_at).toLocaleString()}

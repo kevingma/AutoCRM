@@ -1,11 +1,6 @@
 import { redirect } from "@sveltejs/kit"
 import type { PageServerLoad } from "./$types"
 
-/**
- * Existing signout action remains below.
- * We are adding a new `load` function to handle dashboard data for employees.
- */
-
 export const load: PageServerLoad = async ({
   locals: { supabase, safeGetSession },
 }) => {
@@ -14,37 +9,40 @@ export const load: PageServerLoad = async ({
     throw redirect(303, "/login")
   }
 
-  // Fetch the user's profile to check role
+  // We previously fetched userRole here, but now it's handled in +layout.server.ts
+  // so we only gather stats or other dashboard data.
+
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("role")
     .eq("id", user.id)
     .single()
 
+  // If profile cannot be loaded, return empty stats/tickets
   if (profileError || !profile) {
-    // No role info => fallback
     return {
-      userRole: "",
       stats: {
         activeTicketsCount: 0,
         ticketsResolvedTodayCount: 0,
+        feedbackReceivedCount: 0,
       },
       recentTickets: [],
     }
   }
 
-  const userRole = profile.role
-  if (userRole !== "employee" && userRole !== "administrator") {
+  // If not employee/admin, skip special queries
+  if (profile.role !== "employee" && profile.role !== "administrator") {
     return {
-      userRole,
       stats: {
         activeTicketsCount: 0,
         ticketsResolvedTodayCount: 0,
+        feedbackReceivedCount: 0,
       },
       recentTickets: [],
     }
   }
 
+  // 1) Count active tickets (example logic)
   const { data: userTicketsReplyIds } = await supabase
     .from("ticket_replies")
     .select("ticket_id")
@@ -62,6 +60,7 @@ export const load: PageServerLoad = async ({
 
   const activeTicketsCount = activeTickets?.length || 0
 
+  // 2) Count tickets resolved today
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   const isoMidnight = today.toISOString()
@@ -87,6 +86,7 @@ export const load: PageServerLoad = async ({
 
   const ticketsResolvedTodayCount = closedTicketsToday?.length || 0
 
+  // 3) Recent tickets the user replied to
   const { data: recentReplies } = await supabase
     .from("ticket_replies")
     .select("ticket_id, created_at")
@@ -122,11 +122,15 @@ export const load: PageServerLoad = async ({
     .map((id) => recentTicketsMap.get(id))
     .filter(Boolean)
 
+  // 4) (Optional) feedback count or other stats can be fetched similarly
+  // For simplicity, we'll place a placeholder here:
+  const feedbackReceivedCount = 0
+
   return {
-    userRole,
     stats: {
       activeTicketsCount,
       ticketsResolvedTodayCount,
+      feedbackReceivedCount,
     },
     recentTickets,
   }

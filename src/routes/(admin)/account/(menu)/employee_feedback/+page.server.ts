@@ -2,9 +2,8 @@ import { redirect, fail } from "@sveltejs/kit"
 import type { PageServerLoad, Actions } from "./$types"
 
 /**
- * If the user is an EMPLOYEE -> shows all feedback for tickets assigned to them.
- * If the user is ADMIN + query param `?employeeId=...`, show that user's assigned tickets feedback.
- * If the user is ADMIN with no param, show feedback for all employees in same company.
+ * If the user is EMPLOYEE -> shows feedback for tickets assigned to them only.
+ * If the user is ADMIN + optional `?employeeId=...`, show that user's or all employees' feedback.
  */
 export const load: PageServerLoad = async ({
   url,
@@ -27,52 +26,51 @@ export const load: PageServerLoad = async ({
     throw fail(500, { errorMessage: "Could not load profile" })
   }
 
-  // only employees or admins can see this page
+  // Only employees or admins can see this page
   if (myProfile.role !== "employee" && myProfile.role !== "administrator") {
     throw redirect(303, "/account")
   }
 
-  const employeeIdParam = url.searchParams.get("employeeId")
-
-  // if admin and employeeId is given, show that user's feedback
-  // if admin and no employeeId, show all assigned in the same company
-  // if employee, show only those assigned to yourself
+  // If employee, ignore any ?employeeId and show only their own assigned tickets
   let targetUserId = user.id
+
   if (myProfile.role === "administrator") {
+    // Admin can optionally filter by employee
+    const employeeIdParam = url.searchParams.get("employeeId")
     if (employeeIdParam) {
       targetUserId = employeeIdParam
     } else {
-      // we'll handle "all employees in same company" by returning a special placeholder
-      // then queries can find them
+      // If no param, means "all employees in same company"
       targetUserId = ""
     }
   }
 
-  // find all feedback rows for tickets assigned to `targetUserId`
-  // (or assigned to any user in same company, if targetUserId = "")
+  // If targetUserId is empty => gather all tickets assigned to any employees in same org
+  // Otherwise => gather tickets assigned to `targetUserId`
   let assignedIds: string[] = []
 
   if (targetUserId) {
-    // check if the target user is truly in the same company
-    const { data: tProfile, error: tProfErr } = await supabaseServiceRole
-      .from("profiles")
-      .select("id, role, company_name, website")
-      .eq("id", targetUserId)
-      .single()
+    // confirm this user is in same company (or it's themselves)
+    if (targetUserId !== user.id) {
+      // admin is looking up a particular employee
+      const { data: tProfile, error: tProfErr } = await supabaseServiceRole
+        .from("profiles")
+        .select("id, role, company_name, website")
+        .eq("id", targetUserId)
+        .single()
 
-    if (tProfErr || !tProfile) {
-      // no such user => return empty
-      return { feedback: [], role: myProfile.role }
+      // if missing or not same company => no results
+      if (tProfErr || !tProfile) {
+        return { feedback: [], role: myProfile.role }
+      }
+      if (
+        tProfile.company_name !== myProfile.company_name &&
+        tProfile.website !== myProfile.website
+      ) {
+        return { feedback: [], role: myProfile.role }
+      }
     }
-    if (
-      tProfile.company_name !== myProfile.company_name &&
-      tProfile.website !== myProfile.website
-    ) {
-      // not in same org => no results
-      return { feedback: [], role: myProfile.role }
-    }
-
-    // fetch all tickets assigned to that user
+    // fetch tickets assigned to targetUserId
     const { data: assignedTickets } = await supabaseServiceRole
       .from("tickets")
       .select("id")
@@ -80,7 +78,6 @@ export const load: PageServerLoad = async ({
     assignedIds = assignedTickets?.map((t) => t.id) ?? []
   } else {
     // admin wants all employees in same company
-    // first find all employees in same company
     const { data: employees } = await supabaseServiceRole
       .from("profiles")
       .select("id")
@@ -88,13 +85,11 @@ export const load: PageServerLoad = async ({
       .or(
         `company_name.eq.${myProfile.company_name},website.eq.${myProfile.website}`,
       )
-
     const employeeIds = employees?.map((e) => e.id) ?? []
     if (employeeIds.length === 0) {
       return { feedback: [], role: myProfile.role }
     }
 
-    // fetch all tickets assigned to those employees
     const { data: assignedTickets } = await supabaseServiceRole
       .from("tickets")
       .select("id, assigned_to")
@@ -118,18 +113,17 @@ export const load: PageServerLoad = async ({
     return { feedback: [], role: myProfile.role }
   }
 
-  // optional: join with tickets to get title
-  const ticketMap = new Map<string, { title: string; status: string }>()
+  // gather ticket titles
   const { data: relevantTickets } = await supabaseServiceRole
     .from("tickets")
     .select("id, title, status")
     .in("id", assignedIds)
 
+  const ticketMap = new Map<string, { title: string; status: string }>()
   relevantTickets?.forEach((t) => {
     ticketMap.set(t.id, { title: t.title, status: t.status })
   })
 
-  // build a shaped array
   const feedback = feedbackRows.map((fb) => ({
     id: fb.id,
     ticket_id: fb.ticket_id,

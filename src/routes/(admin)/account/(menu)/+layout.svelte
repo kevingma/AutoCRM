@@ -75,7 +75,6 @@
         </div>
       </li>
 
-      <!-- Main links -->
       <li>
         <a
           href="/account"
@@ -99,6 +98,7 @@
           Home
         </a>
       </li>
+
       <li>
         <a
           href="/account/tickets"
@@ -122,6 +122,7 @@
           Tickets
         </a>
       </li>
+
       <li>
         <a
           href="/account/billing"
@@ -197,14 +198,34 @@
         </a>
       </li>
 
-      <!-- Show user chat route if customer -->
+      <!-- Show user chat route if 'customer' -->
       {#if userRole === "customer"}
         <li>
-          <a href="/account/live_chat" onclick={closeDrawer}> Live Chat </a>
+          <a
+            href="/account/live_chat"
+            class={adminSectionValue === "live_chat" ? "active" : ""}
+            onclick={closeDrawer}
+          >
+            <!-- NEW ICON FOR LIVE CHAT -->
+            <svg
+              class="h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M3 8.5C3 5.42 5.42 3 8.5 3h7c3.08 0 5.5 2.42 5.5 5.5S18.58 14 15.5 14H10l-3 3v-3H8.5C5.42 14 3 11.58 3 8.5z"
+              />
+            </svg>
+            Live Chat
+          </a>
         </li>
       {/if}
 
-      <!-- Show agent chat route if employee/admin -->
+      <!-- Show agent chat route if 'employee' or 'administrator' -->
       {#if userRole === "employee" || userRole === "administrator"}
         <li>
           <a
@@ -212,6 +233,25 @@
             class={adminSectionValue === "live_chat_agent" ? "active" : ""}
             onclick={closeDrawer}
           >
+            <!-- NEW ICON FOR AGENT LIVE CHAT -->
+            <svg
+              class="h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M3 8.5C3 5.42 5.42 3 8.5 3h7c3.08 0 5.5 2.42 5.5 5.5S18.58 14 15.5 14H10l-3 3v-3H8.5C5.42 14 3 11.58 3 8.5z"
+              />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M14 8.5h2m-1 1v-2"
+              />
+            </svg>
             Agent Live Chat
           </a>
         </li>
