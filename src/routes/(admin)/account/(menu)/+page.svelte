@@ -2,125 +2,163 @@
   import { getContext } from "svelte"
   import type { Writable } from "svelte/store"
 
-  let adminSection: Writable<string> = getContext("adminSection")
-  adminSection.set("home")
-
+  // We'll receive load data from +page.server.ts
   export let data: {
     userRole: string
     stats: {
-      activeTicketsCount: number
-      ticketsResolvedTodayCount: number
-      feedbackReceivedCount: number
+      openTicketsCount?: number
+      averageResponseTime?: number
+      averageResolutionTime?: number
+      customerSatisfaction?: number
     }
-    recentTickets: {
+    recentActivity: {
+      type: "ticket" | "chat"
       id: string
-      title: string
-      status: string
-      created_at: string | null
+      created_at: string
     }[]
   }
+
+  // For admin drawer highlighting
+  let adminSection: Writable<string> = getContext("adminSection")
+  adminSection.set("home")
+
+  const { userRole, stats, recentActivity } = data
 </script>
 
 <svelte:head>
   <title>Account Dashboard</title>
 </svelte:head>
 
-<!-- If not employee or admin, show simpler placeholders or a friendly message -->
-{#if data.userRole !== "employee" && data.userRole !== "administrator"}
-  <h1 class="text-2xl font-bold mb-3">Dashboard</h1>
-  <p class="mb-6">Welcome to your account area!</p>
-
-  <!-- Example placeholders (unchanged) -->
-  <div class="my-6">
-    <h2 class="text-xl font-bold mb-1">Users</h2>
-    <div class="stats shadow stats-vertical sm:stats-horizontal sm:w-[420px]">
-      <div class="stat place-items-center">
-        <div class="stat-title">Downloads</div>
-        <div class="stat-value">31K</div>
-        <div class="stat-desc">↗︎ 546 (2%)</div>
-      </div>
-      <div class="stat place-items-center">
-        <div class="stat-title">Users</div>
-        <div class="stat-value text-secondary">4,200</div>
-        <div class="stat-desc">↗︎ 40 (2%)</div>
-      </div>
-    </div>
-  </div>
-  <div class="my-6">
-    <h2 class="text-xl font-bold mb-1">Accounts</h2>
-    <div class="stats shadow stats-vertical sm:stats-horizontal sm:w-[420px]">
-      <div class="stat place-items-center">
-        <div class="stat-title">New Registers</div>
-        <div class="stat-value">1,200</div>
-        <div class="stat-desc">↘︎ 90 (14%)</div>
-      </div>
-      <div class="stat place-items-center">
-        <div class="stat-title">Churned Accounts</div>
-        <div class="stat-value">42</div>
-        <div class="stat-desc">↘︎ 6 (12%)</div>
-      </div>
-    </div>
-  </div>
-  <div class="my-6">
-    <h2 class="text-xl font-bold mb-1">Revenue</h2>
-    <div class="stats shadow stats-vertical sm:stats-horizontal sm:w-[420px]">
-      <div class="stat place-items-center">
-        <div class="stat-title text-success">Revenue</div>
-        <div class="stat-value text-success">$4200</div>
-        <div class="stat-desc">↗︎ $180 (4%)</div>
-      </div>
-      <div class="stat place-items-center">
-        <div class="stat-title">New Subscribers</div>
-        <div class="stat-value">16</div>
-        <div class="stat-desc">↘︎ 1 (%7)</div>
-      </div>
-    </div>
+{#if userRole !== "employee" && userRole !== "administrator"}
+  <!-- Non-employee or admin sees a simpler placeholder: -->
+  <h1 class="text-2xl font-bold mb-3">User Dashboard</h1>
+  <p>Welcome to your account area!</p>
+  <div class="mt-6 text-sm">
+    <p>Explore your tickets, billing, and profile settings in the side menu.</p>
   </div>
 {:else}
-  <!-- Employee or Administrator -->
-  <h1 class="text-2xl font-bold mb-3">Employee Dashboard</h1>
+  <!-- Employee or Administrator Dashboard -->
+  <h1 class="text-2xl font-bold mb-4">Employee Dashboard</h1>
 
-  <div class="stats shadow stats-vertical sm:stats-horizontal sm:w-[420px]">
-    <div class="stat place-items-center">
-      <div class="stat-title">Active Tickets</div>
-      <div class="stat-value">{data.stats.activeTicketsCount}</div>
-      <div class="stat-desc">Open/In Progress, has your replies</div>
+  <!-- TOP ROW: 4 statistic boxes with DaisyUI "stats" -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <!-- 1) Open Tickets -->
+    <div class="stat shadow">
+      <div class="stat-title">Open Tickets</div>
+      <div class="stat-value">{stats.openTicketsCount ?? 0}</div>
+      <div class="stat-desc">Assigned to you</div>
     </div>
-    <div class="stat place-items-center">
-      <div class="stat-title">Resolved Today</div>
-      <div class="stat-value">{data.stats.ticketsResolvedTodayCount}</div>
-      <div class="stat-desc">Closed with your reply after midnight</div>
+
+    <!-- 2) Avg. Response Time -->
+    <div class="stat shadow">
+      <div class="stat-title">Avg Response Time</div>
+      <div class="stat-value">
+        {stats.averageResponseTime
+          ? stats.averageResponseTime.toFixed(1)
+          : "0.0"}
+        <span class="text-lg ml-1">min</span>
+      </div>
+      <div class="stat-desc">to first reply</div>
     </div>
-    <!-- NEW: Link to feedback page -->
-    <a
-      href="/account/employee_feedback"
-      class="stat place-items-center hover:bg-base-200"
-    >
-      <div class="stat-title">Feedback Received</div>
-      <div class="stat-value">{data.stats.feedbackReceivedCount}</div>
-      <div class="stat-desc">Click to see feedback</div>
-    </a>
+
+    <!-- 3) Avg. Resolution Time -->
+    <div class="stat shadow">
+      <div class="stat-title">Avg Resolution Time</div>
+      <div class="stat-value">
+        {stats.averageResolutionTime
+          ? stats.averageResolutionTime.toFixed(1)
+          : "0.0"}
+        <span class="text-lg ml-1">hr</span>
+      </div>
+      <div class="stat-desc">for closed tickets</div>
+    </div>
+
+    <!-- 4) Customer Satisfaction -->
+    <div class="stat shadow">
+      <div class="stat-title">Customer Satisfaction</div>
+      <div class="stat-value">
+        {stats.customerSatisfaction
+          ? stats.customerSatisfaction.toFixed(1)
+          : "0.0"}
+        <span class="text-lg ml-1">/ 5</span>
+      </div>
+      <div class="stat-desc">ticket feedback rating</div>
+    </div>
   </div>
 
-  <div class="mt-8">
-    <h2 class="text-xl font-bold mb-2">Recent Tickets You Contributed To</h2>
-    {#if data.recentTickets.length === 0}
-      <p class="text-sm">No recent tickets found.</p>
-    {:else}
-      <ul class="list-disc list-inside">
-        {#each data.recentTickets as t}
-          <li class="my-1">
-            <a href={"/account/tickets/" + t.id} class="link link-primary">
-              {t.title} (status: {t.status})
-            </a>
-            {#if t.created_at}
-              <span class="text-sm text-gray-500 ml-1">
-                — {new Date(t.created_at).toLocaleString()}
-              </span>
-            {/if}
-          </li>
-        {/each}
-      </ul>
-    {/if}
+  <!-- BOTTOM SECTION: Two columns, left has "Recent Activity", right has "Quick Links" -->
+  <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+    <!-- Left: Recent Activity -->
+    <div class="col-span-2 card shadow bg-base-100">
+      <div class="card-body">
+        <h2 class="card-title text-lg">Recent Activity</h2>
+        {#if recentActivity.length === 0}
+          <p class="text-gray-500 mt-2">No recent activity found.</p>
+        {:else}
+          <ul class="mt-2 space-y-2">
+            {#each recentActivity as act}
+              <li class="border-b pb-2">
+                <span class="text-sm text-gray-500 mr-2">
+                  {new Date(act.created_at).toLocaleString()}
+                </span>
+                {#if act.type === "ticket"}
+                  <a
+                    href={`/account/tickets/${act.id}`}
+                    class="link link-primary"
+                  >
+                    Ticket #{act.id.slice(0, 8)}
+                  </a>
+                  <span class="text-xs ml-1">(reply)</span>
+                {:else if act.type === "chat"}
+                  <a
+                    href={`/account/live_chat_agent/${act.id}`}
+                    class="link link-secondary"
+                  >
+                    Live Chat #{act.id.slice(0, 8)}
+                  </a>
+                  <span class="text-xs ml-1">(agent message)</span>
+                {/if}
+              </li>
+            {/each}
+          </ul>
+        {/if}
+      </div>
+    </div>
+
+    <!-- Right: Quick Links -->
+    <div class="card shadow bg-base-100">
+      <div class="card-body">
+        <h2 class="card-title text-lg">Quick Links</h2>
+        <div class="mt-2">
+          <ul class="list-disc list-inside text-sm space-y-2">
+            <li>
+              <a class="link link-primary" href="/account/tickets"
+                >View Tickets</a
+              >
+            </li>
+            <li>
+              <a class="link link-primary" href="/account/billing"
+                >Manage Billing</a
+              >
+            </li>
+            <li>
+              <a class="link link-primary" href="/account/live_chat_agent"
+                >Agent Live Chat</a
+              >
+            </li>
+            <li>
+              <a class="link link-primary" href="/account/settings"
+                >Account Settings</a
+              >
+            </li>
+            <li>
+              <a class="link link-primary" href="/account/approve_users"
+                >Approve Users</a
+              >
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
   </div>
 {/if}
