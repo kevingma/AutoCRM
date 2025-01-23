@@ -15,12 +15,12 @@
   }
 
   let adminSection: Writable<string> = getContext("adminSection")
-  adminSection.set("live_chat")
+  // Use "live_chat_agent" to highlight the nav
+  adminSection.set("live_chat_agent")
 
   function joinChat(chatId: string) {
     const formData = new FormData()
     formData.append("chatId", chatId)
-    // call the "joinChat" action from +page.server.ts
     fetch("?/joinChat", {
       method: "POST",
       body: formData,
@@ -32,7 +32,6 @@
   function closeChat(chatId: string) {
     const formData = new FormData()
     formData.append("chatId", chatId)
-    // call the "closeChat" action from +page.server.ts
     fetch("?/closeChat", {
       method: "POST",
       body: formData,
@@ -43,10 +42,10 @@
 </script>
 
 <svelte:head>
-  <title>Live Chats</title>
+  <title>Agent Live Chats</title>
 </svelte:head>
 
-<h1 class="text-2xl font-bold mb-6">Live Chats</h1>
+<h1 class="text-2xl font-bold mb-6">Agent Live Chats</h1>
 <p class="text-sm">
   Below are user chats that have requested an agent or are assigned to you.
 </p>
@@ -69,7 +68,7 @@
           <tr>
             <td>
               <a
-                href={"/account/live_chat/" + chat.id}
+                href={"/account/live_chat_agent/" + chat.id}
                 class="link link-primary"
               >
                 {chat.id.slice(0, 8)}...

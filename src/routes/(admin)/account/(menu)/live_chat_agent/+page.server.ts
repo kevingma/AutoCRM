@@ -7,7 +7,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
     throw redirect(303, "/login")
   }
 
-  // Verify employee or admin role
+  // Only employees or administrators can access
   const { data: profile } = await supabase
     .from("profiles")
     .select("role")
@@ -35,7 +35,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
   }
 
   return {
-    openChats: activeChats, // renamed to openChats
+    openChats: activeChats,
     role: profile.role,
   }
 }
@@ -53,18 +53,26 @@ export const actions: Actions = {
       return { error: "Missing chatId" }
     }
 
+    // Confirm role is employee or admin
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single()
+
+    if (!profile || (profile.role !== "employee" && profile.role !== "administrator")) {
+      return { error: "Not authorized." }
+    }
+
     // find the chat
-    const { data: chat, error } = await supabase
+    const { data: chat } = await supabase
       .from("live_chats")
       .select("*")
       .eq("id", chatId)
       .single()
-    if (!chat || error) {
-      return { error: "Chat not found" }
-    }
 
-    if (chat.closed_at) {
-      return { error: "Chat is already closed." }
+    if (!chat || chat.closed_at) {
+      return { error: "Chat not found or already closed." }
     }
 
     // Assign the agent
@@ -72,6 +80,7 @@ export const actions: Actions = {
       .from("live_chats")
       .update({ agent_id: user.id })
       .eq("id", chatId)
+
     if (updateError) {
       console.error("Error assigning agent:", updateError)
       return { error: "Could not assign agent." }
@@ -93,26 +102,31 @@ export const actions: Actions = {
       return { error: "Missing chatId or message" }
     }
 
-    // confirm chat is assigned or user is admin
-    const { data: chat, error: chatError } = await supabase
-      .from("live_chats")
-      .select("id, agent_id, closed_at, is_connected_to_agent")
-      .eq("id", chatId)
-      .single()
-
-    if (!chat || chatError) {
-      return { error: "Chat not found." }
-    }
-    if (chat.closed_at) {
-      return { error: "Chat is already closed." }
-    }
+    // confirm role
     const { data: profile } = await supabase
       .from("profiles")
       .select("role")
       .eq("id", user.id)
       .single()
 
-    if (!profile || (chat.agent_id && chat.agent_id !== user.id && profile.role !== "administrator")) {
+    if (!profile || (profile.role !== "employee" && profile.role !== "administrator")) {
+      return { error: "Not authorized." }
+    }
+
+    // confirm chat is assigned or user is admin
+    const { data: chat } = await supabase
+      .from("live_chats")
+      .select("id, agent_id, closed_at, is_connected_to_agent")
+      .eq("id", chatId)
+      .single()
+
+    if (!chat) {
+      return { error: "Chat not found." }
+    }
+    if (chat.closed_at) {
+      return { error: "Chat is already closed." }
+    }
+    if (chat.agent_id && chat.agent_id !== user.id && profile.role !== "administrator") {
       return { error: "You are not assigned to this chat." }
     }
 
@@ -125,6 +139,7 @@ export const actions: Actions = {
         role: "agent",
         message_text: message,
       })
+
     if (insertError) {
       console.error("Error storing agent message:", insertError)
       return { error: "Could not store agent message." }
@@ -145,26 +160,31 @@ export const actions: Actions = {
       return { error: "Missing chatId" }
     }
 
-    // confirm chat is assigned or user is admin
-    const { data: chat, error } = await supabase
-      .from("live_chats")
-      .select("id, agent_id, closed_at")
-      .eq("id", chatId)
-      .single()
-    if (!chat || error) {
-      return { error: "Chat not found." }
-    }
-    if (chat.closed_at) {
-      return { error: "Chat is already closed." }
-    }
-
+    // confirm role
     const { data: profile } = await supabase
       .from("profiles")
       .select("role")
       .eq("id", user.id)
       .single()
 
-    if (!profile || (chat.agent_id && chat.agent_id !== user.id && profile.role !== "administrator")) {
+    if (!profile || (profile.role !== "employee" && profile.role !== "administrator")) {
+      return { error: "Not authorized." }
+    }
+
+    // confirm chat is assigned or user is admin
+    const { data: chat } = await supabase
+      .from("live_chats")
+      .select("id, agent_id, closed_at")
+      .eq("id", chatId)
+      .single()
+
+    if (!chat) {
+      return { error: "Chat not found." }
+    }
+    if (chat.closed_at) {
+      return { error: "Chat is already closed." }
+    }
+    if (chat.agent_id && chat.agent_id !== user.id && profile.role !== "administrator") {
       return { error: "You are not assigned to this chat." }
     }
 

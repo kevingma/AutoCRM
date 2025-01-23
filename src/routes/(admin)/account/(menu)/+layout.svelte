@@ -141,6 +141,7 @@
           Billing
         </a>
       </li>
+
       {#if userRole === "administrator"}
         <li>
           <a
@@ -166,10 +167,8 @@
         </li>
       {/if}
 
-      <!-- Divider to separate main items from the bottom items -->
       <li class="my-2"><div class="divider"></div></li>
 
-      <!-- Knowledge Base now placed below the divider -->
       <li>
         <a
           href="/account/knowledge_base"
@@ -197,27 +196,27 @@
           Knowledge Base
         </a>
       </li>
+
+      <!-- Show user chat route if customer -->
+      {#if userRole === "customer"}
+        <li>
+          <a href="/account/live_chat" onclick={closeDrawer}> Live Chat </a>
+        </li>
+      {/if}
+
+      <!-- Show agent chat route if employee/admin -->
       {#if userRole === "employee" || userRole === "administrator"}
         <li>
           <a
-            href="/account/live_chat"
-            class="font-semibold"
-            onclick={closeDrawer}
-          >
-            Live Chat (User)
-          </a>
-        </li>
-        <li>
-          <a
-            href="/account/live_chat"
-            class={adminSectionValue === "live_chat" ? "active" : ""}
+            href="/account/live_chat_agent"
+            class={adminSectionValue === "live_chat_agent" ? "active" : ""}
             onclick={closeDrawer}
           >
             Agent Live Chat
           </a>
         </li>
       {/if}
-      <!-- Settings and Sign Out together at the very bottom -->
+
       <li class="mt-auto flex flex-row items-center gap-4">
         <a
           href="/account/settings"
