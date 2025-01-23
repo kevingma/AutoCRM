@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte"
-  import { enhance, applyAction } from "$app/forms"
+  import { enhance } from "$app/forms" // removed onMount, applyAction
   import type { SubmitFunction } from "@sveltejs/kit"
 
   export let data: {
@@ -19,20 +18,16 @@
   }
 
   let errors: Record<string, string> = {}
-  let loading = false
 
   const handleApprove: SubmitFunction = () => {
-    loading = true
     errors = {}
     return async ({ update, result }) => {
       await update({ reset: false })
-      loading = false
       if (result.type === "failure") {
         if (result.data?.errorMessage) {
           errors["_"] = result.data.errorMessage
         }
       } else if (result.type === "success") {
-        // refresh page to see updated list
         location.reload()
       }
     }

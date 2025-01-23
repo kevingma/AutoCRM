@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { page } from "$app/stores"
-  import { enhance, applyAction } from "$app/forms"
+  import { enhance } from "$app/forms" // removed applyAction
   import type { SubmitFunction } from "@sveltejs/kit"
 
   export let data: {
@@ -33,7 +32,6 @@
   let updateLoading = false
   let updateError: string | null = null
 
-  // Add reply
   const handleAddReply: SubmitFunction = () => {
     replyLoading = true
     replyError = null
@@ -43,13 +41,11 @@
       if (result.type === "failure") {
         replyError = result.data?.errorMessage || "Unknown error"
       } else if (result.type === "success") {
-        // reload the page to see new reply
         location.reload()
       }
     }
   }
 
-  // Update ticket (like status, priority, tags)
   const handleUpdateTicket: SubmitFunction = () => {
     updateLoading = true
     updateError = null
@@ -59,18 +55,15 @@
       if (result.type === "failure") {
         updateError = result.data?.errorMessage || "Unknown error"
       } else if (result.type === "success") {
-        // reload the page to see updated fields
         location.reload()
       }
     }
   }
 
-  // Only employees or admins see the "is_internal" checkbox
   function canMarkInternal() {
     return userRole === "administrator" || userRole === "employee"
   }
 
-  // Only employees or admins can see the "edit ticket" form
   function canUpdateTicket() {
     return userRole === "administrator" || userRole === "employee"
   }

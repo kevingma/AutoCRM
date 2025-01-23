@@ -1,4 +1,4 @@
-import { fail, redirect } from "@sveltejs/kit"
+import { redirect } from "@sveltejs/kit" // removed fail import
 import type { PageServerLoad } from "./$types"
 
 export const load: PageServerLoad = async ({
@@ -7,11 +7,9 @@ export const load: PageServerLoad = async ({
 }) => {
   const { session, user } = await safeGetSession()
   if (!session || !user) {
-    // Not logged in
     throw redirect(303, "/login")
   }
 
-  // Fetch user's profile
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("role, company_name, website, employee_approved")

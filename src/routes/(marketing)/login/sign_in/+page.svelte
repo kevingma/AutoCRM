@@ -3,7 +3,6 @@
   import { sharedAppearance, oauthProviders } from "../login_config"
   import { goto } from "$app/navigation"
   import { onMount } from "svelte"
-  import { page } from "$app/stores"
 
   let { data } = $props()
   let { supabase } = data

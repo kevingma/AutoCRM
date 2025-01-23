@@ -69,7 +69,9 @@ export const actions: Actions = {
     if (!session || !user) {
       throw redirect(303, "/login")
     }
-    // Check if this user is an administrator
+    const formData = await request.formData()
+    const targetUserId = formData.get("targetUserId") as string | null
+
     const { data: adminProfile } = await supabase
       .from("profiles")
       .select("role, company_name")
@@ -79,14 +81,10 @@ export const actions: Actions = {
     if (!adminProfile || adminProfile.role !== "administrator") {
       return fail(403, { errorMessage: "Not authorized" })
     }
-    const formData = await request.formData()
-    const targetUserId = formData.get("targetUserId") as string | null
-
     if (!targetUserId) {
       return fail(400, { errorMessage: "No user specified" })
     }
 
-    // Retrieve the target's role and approval fields
     const { data: targetProfile, error: tgtError } = await supabase
       .from("profiles")
       .select("id, role, company_name, employee_approved, customer_approved")
@@ -96,15 +94,11 @@ export const actions: Actions = {
     if (tgtError || !targetProfile) {
       return fail(404, { errorMessage: "Target user not found" })
     }
-
-    // Must be same company as the admin's company
     if (targetProfile.company_name !== adminProfile.company_name) {
-      return fail(403, {
-        errorMessage: "This user is not in your company",
-      })
+      return fail(403, { errorMessage: "This user is not in your company" })
     }
 
-    let updates: Record<string, boolean> = {}
+    const updates: Record<string, boolean> = {}
     if (targetProfile.role === "employee") {
       updates.employee_approved = true
     } else if (targetProfile.role === "customer") {
@@ -123,7 +117,6 @@ export const actions: Actions = {
         errorMessage: "Failed to approve user. Try again later."
       })
     }
-
     return { success: true }
-  },
+  }
 }

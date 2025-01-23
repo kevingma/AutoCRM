@@ -1,9 +1,5 @@
 <script lang="ts">
-  import {
-    WebsiteName,
-    WebsiteBaseUrl,
-    WebsiteDescription,
-  } from "./../../config"
+  import { WebsiteBaseUrl, WebsiteDescription } from "./../../config"
 
   // Updated brand name and marketing details
   const ldJson = {

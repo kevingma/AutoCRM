@@ -1,18 +1,16 @@
 <script lang="ts">
-  import { enhance, applyAction } from "$app/forms"
+  import { enhance } from "$app/forms" // removed applyAction
   import type { SubmitFunction } from "@sveltejs/kit"
 
   let errors: Record<string, string> = {}
   let loading = false
 
-  // We'll use a local action "createTicket" in new/+page.server.ts
   const handleSubmit: SubmitFunction = () => {
     loading = true
     errors = {}
     return async ({ update, result }) => {
       await update({ reset: false })
       loading = false
-
       if (result.type === "failure") {
         if (result.data?.errorMessage) {
           errors["_"] = result.data.errorMessage
@@ -22,7 +20,6 @@
           errors[f] = "Error"
         })
       } else if (result.type === "success") {
-        // Ticket created, go back to tickets listing
         window.location.href = "/account/tickets"
       }
     }

@@ -1,10 +1,9 @@
 <script lang="ts">
   import { getContext } from "svelte"
   import type { Writable } from "svelte/store"
-  import { enhance, applyAction } from "$app/forms"
+  import { enhance } from "$app/forms" // Removed applyAction
   import type { SubmitFunction } from "@sveltejs/kit"
 
-  // Use the adminSection store to highlight this page in the sidebar
   let adminSection: Writable<string> = getContext("adminSection")
   adminSection.set("approvals")
 
@@ -20,18 +19,13 @@
   }
 
   let errorMessage = ""
-  let loading = false
 
   const handleApprove: SubmitFunction = () => {
-    loading = true
-    errorMessage = ""
     return async ({ update, result }) => {
       await update({ reset: false })
-      loading = false
       if (result.type === "failure") {
         errorMessage = result.data?.errorMessage ?? "Failed to approve user"
       } else if (result.type === "success") {
-        // reload page
         location.reload()
       }
     }
