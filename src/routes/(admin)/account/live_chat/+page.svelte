@@ -36,12 +36,13 @@
   }
 
   const handleCloseChat: SubmitFunction = () => {
-  return async ({ update }) => {
-    await update({ reset: false })
-    // Just reload or navigate away
-    location.reload()
+    return async ({ update }) => {
+      await update({ reset: false })
+      // Just reload or navigate away
+      location.reload()
+    }
   }
-}
+</script>
 
 <svelte:head>
   <title>Live Chat</title>
