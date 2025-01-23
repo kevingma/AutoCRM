@@ -3,7 +3,7 @@ import type { PageServerLoad, Actions } from "./$types"
 
 // Loads unapproved employees/customers in the same company as the admin
 export const load: PageServerLoad = async ({
-  locals: { safeGetSession, supabase }
+  locals: { safeGetSession, supabase },
 }) => {
   const { session, user } = await safeGetSession()
   if (!session || !user) {
@@ -38,11 +38,11 @@ export const load: PageServerLoad = async ({
     .from("profiles")
     .select("id, full_name, role, employee_approved, customer_approved")
     .eq("company_name", adminCompany)
-    .or("role.eq.employee,role.eq.customer")  // only employees or customers
+    .or("role.eq.employee,role.eq.customer") // only employees or customers
     .or("employee_approved.eq.false,customer_approved.eq.false") // unapproved
-    // The above or() calls might need parentheses if you want to strictly combine them
-    // but Supabase doesn't always require it if the logic is or(and(and()))
-    // if needed, could do .filter('employee_approved', 'eq', false).or('customer_approved.eq.false')
+  // The above or() calls might need parentheses if you want to strictly combine them
+  // but Supabase doesn't always require it if the logic is or(and(and()))
+  // if needed, could do .filter('employee_approved', 'eq', false).or('customer_approved.eq.false')
 
   if (pendingError) {
     return { pendingUsers: [], isAdmin: true }
@@ -114,9 +114,9 @@ export const actions: Actions = {
 
     if (updateErr) {
       return fail(500, {
-        errorMessage: "Failed to approve user. Try again later."
+        errorMessage: "Failed to approve user. Try again later.",
       })
     }
     return { success: true }
-  }
+  },
 }

@@ -3,7 +3,7 @@ import type { PageServerLoad, Actions } from "./$types"
 
 export const load: PageServerLoad = async ({
   params,
-  locals: { supabase, supabaseServiceRole, safeGetSession }
+  locals: { supabase, supabaseServiceRole, safeGetSession },
 }) => {
   const { session, user } = await safeGetSession()
   if (!session || !user) {
@@ -72,7 +72,10 @@ export const load: PageServerLoad = async ({
   }
 
   // Now fetch replies. If role is employee/admin => show all. If customer => exclude is_internal = true
-  let repliesQuery = supabase.from("ticket_replies").select("*").eq("ticket_id", ticket.id)
+  let repliesQuery = supabase
+    .from("ticket_replies")
+    .select("*")
+    .eq("ticket_id", ticket.id)
   if (role === "administrator") {
     // admin => show all
   } else if (role === "employee") {
@@ -98,13 +101,17 @@ export const load: PageServerLoad = async ({
   return {
     ticket,
     replies,
-    userRole: role
+    userRole: role,
   }
 }
 
 export const actions: Actions = {
   // We can reuse "addReply" logic here or replicate. Let's replicate quickly for clarity:
-  addReply: async ({ request, locals: { supabase, safeGetSession }, params }) => {
+  addReply: async ({
+    request,
+    locals: { supabase, safeGetSession },
+    params,
+  }) => {
     const { session, user } = await safeGetSession()
     if (!session || !user) {
       throw redirect(303, "/login")
@@ -122,7 +129,7 @@ export const actions: Actions = {
       ticket_id: params.ticket_id,
       user_id: user.id,
       reply_text: replyText,
-      is_internal: isInternal
+      is_internal: isInternal,
     })
 
     if (error) {
@@ -132,7 +139,11 @@ export const actions: Actions = {
     return { success: true }
   },
 
-  updateTicket: async ({ request, locals: { supabase, safeGetSession }, params }) => {
+  updateTicket: async ({
+    request,
+    locals: { supabase, safeGetSession },
+    params,
+  }) => {
     const { session } = await safeGetSession()
     if (!session) {
       throw redirect(303, "/login")
@@ -161,5 +172,5 @@ export const actions: Actions = {
       return fail(500, { errorMessage: "Could not update ticket" })
     }
     return { success: true }
-  }
+  },
 }

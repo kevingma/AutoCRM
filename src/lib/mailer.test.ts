@@ -122,9 +122,13 @@ describe("mailer", () => {
       expect(email.subject).toEqual("Test subject")
       // Updated expectations to match the actual "welcome_email_text.hbs" content
       expect(email.text).toContain("Welcome to AutoCRM!")
-      expect(email.text).toContain("We’re excited to show you how AI can streamline")
+      expect(email.text).toContain(
+        "We’re excited to show you how AI can streamline",
+      )
       expect(email.html).toContain("Welcome to AutoCRM!")
-      expect(email.html).toContain("We’re excited to show you how AI can streamline")
+      expect(email.html).toContain(
+        "We’re excited to show you how AI can streamline",
+      )
       // Ensure we still test for placeholders replaced by our template properties
       expect(email.html).toContain("<html")
       expect(email.html).toContain("https://test.com")

@@ -1,10 +1,12 @@
-import { redirect, fail } from "@sveltejs/kit";
-import type { PageServerLoad, Actions } from "./$types";
+import { redirect, fail } from "@sveltejs/kit"
+import type { PageServerLoad, Actions } from "./$types"
 
-export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession } }) => {
-  const { session, user } = await safeGetSession();
+export const load: PageServerLoad = async ({
+  locals: { supabase, safeGetSession },
+}) => {
+  const { session, user } = await safeGetSession()
   if (!session || !user) {
-    throw redirect(303, "/login");
+    throw redirect(303, "/login")
   }
 
   // Only allow "customer" to proceed
@@ -12,15 +14,15 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
     .from("profiles")
     .select("role")
     .eq("id", user.id)
-    .single();
+    .single()
 
   if (!profile || profile.role !== "customer") {
-    throw redirect(303, "/account");
+    throw redirect(303, "/account")
   }
 
   // No extra data needed here, just show user chat page
-  return {};
-};
+  return {}
+}
 
 export const actions: Actions = {
   /**
@@ -29,9 +31,9 @@ export const actions: Actions = {
    * Optionally return AI reply if desired.
    */
   sendMessage: async ({ request, locals: { supabase, safeGetSession } }) => {
-    const { session, user } = await safeGetSession();
+    const { session, user } = await safeGetSession()
     if (!session || !user) {
-      throw redirect(303, "/login");
+      throw redirect(303, "/login")
     }
 
     // Only "customer" can do this; optionally re-check if you'd like
@@ -39,17 +41,17 @@ export const actions: Actions = {
       .from("profiles")
       .select("role")
       .eq("id", user.id)
-      .single();
+      .single()
 
     if (!profile || profile.role !== "customer") {
-      return fail(403, { error: "Not authorized to send live chat message." });
+      return fail(403, { error: "Not authorized to send live chat message." })
     }
 
-    const formData = await request.formData();
-    const message = formData.get("message")?.toString() || "";
+    const formData = await request.formData()
+    const message = formData.get("message")?.toString() || ""
 
     if (!message.trim()) {
-      return fail(400, { error: "Message is required." });
+      return fail(400, { error: "Message is required." })
     }
 
     // Find or create a live_chats row that is still open for this user
@@ -59,9 +61,9 @@ export const actions: Actions = {
       .eq("user_id", user.id)
       .is("closed_at", null)
       .limit(1)
-      .maybeSingle();
+      .maybeSingle()
 
-    let chatId = existingChat?.id;
+    let chatId = existingChat?.id
     // Create a new chat if not found
     if (!chatId) {
       const { data: newChat, error: chatError } = await supabase
@@ -71,11 +73,11 @@ export const actions: Actions = {
           is_connected_to_agent: false,
         })
         .select()
-        .single();
+        .single()
       if (chatError || !newChat) {
-        return fail(500, { error: "Failed to create a chat." });
+        return fail(500, { error: "Failed to create a chat." })
       }
-      chatId = newChat.id;
+      chatId = newChat.id
     }
 
     // Insert message
@@ -86,23 +88,23 @@ export const actions: Actions = {
         user_id: user.id,
         role: "customer", // or "user"
         message_text: message,
-      });
+      })
 
     if (insertMsgError) {
-      return fail(500, { error: "Failed to send message." });
+      return fail(500, { error: "Failed to send message." })
     }
 
     // Optionally generate a placeholder AI reply
     // (You can integrate real AI with openai if you'd like.)
-    const assistantReply = `Hello! (AI placeholder) Thanks for your message: "${message}". We'll get back to you soon.`;
+    const assistantReply = `Hello! (AI placeholder) Thanks for your message: "${message}". We'll get back to you soon.`
 
     // Return whether user is connected to agent
-    const isConnectedToAgent = existingChat?.is_connected_to_agent ?? false;
+    const isConnectedToAgent = existingChat?.is_connected_to_agent ?? false
 
     return {
       assistantReply,
       isConnectedToAgent,
-    };
+    }
   },
 
   /**
@@ -110,19 +112,19 @@ export const actions: Actions = {
    * Marks is_connected_to_agent = true in live_chats, or creates a new one if none open.
    */
   connectToAgent: async ({ locals: { supabase, safeGetSession } }) => {
-    const { session, user } = await safeGetSession();
+    const { session, user } = await safeGetSession()
     if (!session || !user) {
-      throw redirect(303, "/login");
+      throw redirect(303, "/login")
     }
 
     const { data: profile } = await supabase
       .from("profiles")
       .select("role")
       .eq("id", user.id)
-      .single();
+      .single()
 
     if (!profile || profile.role !== "customer") {
-      return fail(403, { error: "Not authorized to connect to agent." });
+      return fail(403, { error: "Not authorized to connect to agent." })
     }
 
     // Find or create a live_chats row that is still open for this user
@@ -132,9 +134,9 @@ export const actions: Actions = {
       .eq("user_id", user.id)
       .is("closed_at", null)
       .limit(1)
-      .maybeSingle();
+      .maybeSingle()
 
-    let chatId = existingChat?.id;
+    let chatId = existingChat?.id
     if (!chatId) {
       // create new
       const { data: newChat, error: chatError } = await supabase
@@ -144,23 +146,25 @@ export const actions: Actions = {
           is_connected_to_agent: true,
         })
         .select()
-        .single();
+        .single()
       if (chatError || !newChat) {
-        return fail(500, { error: "Failed to start a chat for agent connection." });
+        return fail(500, {
+          error: "Failed to start a chat for agent connection.",
+        })
       }
-      chatId = newChat.id;
+      chatId = newChat.id
     } else {
       // update to set is_connected_to_agent
       const { error: updateError } = await supabase
         .from("live_chats")
         .update({ is_connected_to_agent: true })
-        .eq("id", chatId);
+        .eq("id", chatId)
       if (updateError) {
-        return fail(500, { error: "Failed to connect to agent." });
+        return fail(500, { error: "Failed to connect to agent." })
       }
     }
 
-    return { isConnectedToAgent: true };
+    return { isConnectedToAgent: true }
   },
 
   /**
@@ -168,19 +172,19 @@ export const actions: Actions = {
    * Closes the open chat for the user.
    */
   closeChat: async ({ locals: { supabase, safeGetSession } }) => {
-    const { session, user } = await safeGetSession();
+    const { session, user } = await safeGetSession()
     if (!session || !user) {
-      throw redirect(303, "/login");
+      throw redirect(303, "/login")
     }
 
     const { data: profile } = await supabase
       .from("profiles")
       .select("role")
       .eq("id", user.id)
-      .single();
+      .single()
 
     if (!profile || profile.role !== "customer") {
-      return fail(403, { error: "Not authorized to close chat." });
+      return fail(403, { error: "Not authorized to close chat." })
     }
 
     // find open chat
@@ -190,21 +194,21 @@ export const actions: Actions = {
       .eq("user_id", user.id)
       .is("closed_at", null)
       .limit(1)
-      .maybeSingle();
+      .maybeSingle()
 
     if (!existingChat) {
-      return { success: true }; // nothing to close
+      return { success: true } // nothing to close
     }
 
     const { error: closeErr } = await supabase
       .from("live_chats")
       .update({ closed_at: new Date().toISOString() })
-      .eq("id", existingChat.id);
+      .eq("id", existingChat.id)
 
     if (closeErr) {
-      return fail(500, { error: "Failed to close chat." });
+      return fail(500, { error: "Failed to close chat." })
     }
 
-    return { success: true };
+    return { success: true }
   },
-};
+}

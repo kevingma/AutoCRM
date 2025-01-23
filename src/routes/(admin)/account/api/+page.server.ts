@@ -337,7 +337,8 @@ export const actions = {
       })
     }
 
-    const newProfileCreated = priorProfileError !== null || !priorProfile?.updated_at
+    const newProfileCreated =
+      priorProfileError !== null || !priorProfile?.updated_at
     if (newProfileCreated) {
       // Optionally send a welcome email here
       // sendUserEmail({ ... })

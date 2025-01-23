@@ -7,7 +7,7 @@ import type { PageServerLoad } from "./$types"
  */
 
 export const load: PageServerLoad = async ({
-  locals: { supabase, safeGetSession }
+  locals: { supabase, safeGetSession },
 }) => {
   const { session, user } = await safeGetSession()
   if (!session || !user) {
@@ -27,9 +27,9 @@ export const load: PageServerLoad = async ({
       userRole: "",
       stats: {
         activeTicketsCount: 0,
-        ticketsResolvedTodayCount: 0
+        ticketsResolvedTodayCount: 0,
       },
-      recentTickets: []
+      recentTickets: [],
     }
   }
 
@@ -39,9 +39,9 @@ export const load: PageServerLoad = async ({
       userRole,
       stats: {
         activeTicketsCount: 0,
-        ticketsResolvedTodayCount: 0
+        ticketsResolvedTodayCount: 0,
       },
-      recentTickets: []
+      recentTickets: [],
     }
   }
 
@@ -50,7 +50,9 @@ export const load: PageServerLoad = async ({
     .select("ticket_id")
     .eq("user_id", user.id)
 
-  const distinctTicketIds = [...new Set((userTicketsReplyIds || []).map((x) => x.ticket_id))]
+  const distinctTicketIds = [
+    ...new Set((userTicketsReplyIds || []).map((x) => x.ticket_id)),
+  ]
 
   const { data: activeTickets } = await supabase
     .from("tickets")
@@ -70,12 +72,17 @@ export const load: PageServerLoad = async ({
     .eq("user_id", user.id)
     .gte("created_at", isoMidnight)
 
-  const distinctTicketIdsToday = [...new Set((repliesToday || []).map((r) => r.ticket_id))]
+  const distinctTicketIdsToday = [
+    ...new Set((repliesToday || []).map((r) => r.ticket_id)),
+  ]
 
   const { data: closedTicketsToday } = await supabase
     .from("tickets")
     .select("id")
-    .in("id", distinctTicketIdsToday.length ? distinctTicketIdsToday : ["-dummy-"])
+    .in(
+      "id",
+      distinctTicketIdsToday.length ? distinctTicketIdsToday : ["-dummy-"],
+    )
     .eq("status", "closed")
 
   const ticketsResolvedTodayCount = closedTicketsToday?.length || 0
@@ -119,8 +126,8 @@ export const load: PageServerLoad = async ({
     userRole,
     stats: {
       activeTicketsCount,
-      ticketsResolvedTodayCount
+      ticketsResolvedTodayCount,
     },
-    recentTickets
+    recentTickets,
   }
 }

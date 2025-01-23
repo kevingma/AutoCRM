@@ -1,7 +1,9 @@
 import { fail, redirect } from "@sveltejs/kit"
 import type { PageServerLoad, Actions } from "./$types"
 
-export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession } }) => {
+export const load: PageServerLoad = async ({
+  locals: { supabase, safeGetSession },
+}) => {
   const { session, user } = await safeGetSession()
   if (!session || !user) {
     throw redirect(303, "/login")
@@ -29,7 +31,9 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
     .select("id, full_name, company_name, website, role, employee_approved")
     .eq("role", "employee")
     .eq("employee_approved", false)
-    .or(`company_name.eq.${adminProfile.company_name},website.eq.${adminProfile.website}`)
+    .or(
+      `company_name.eq.${adminProfile.company_name},website.eq.${adminProfile.website}`,
+    )
     .order("updated_at", { ascending: false })
 
   if (unapprovedError) {
@@ -39,7 +43,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 
   return {
     employees: unapproved,
-    isAdmin: true
+    isAdmin: true,
   }
 }
 
@@ -86,7 +90,9 @@ export const actions: Actions = {
       empProfile.company_name !== adminProfile.company_name &&
       empProfile.website !== adminProfile.website
     ) {
-      return fail(403, { errorMessage: "Employee does not match your company." })
+      return fail(403, {
+        errorMessage: "Employee does not match your company.",
+      })
     }
 
     // Approve the employee
@@ -101,5 +107,5 @@ export const actions: Actions = {
     }
 
     return { approved: true }
-  }
+  },
 }

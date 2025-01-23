@@ -1,7 +1,9 @@
 import { redirect } from "@sveltejs/kit"
 import type { PageServerLoad, Actions } from "./$types"
 
-export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession } }) => {
+export const load: PageServerLoad = async ({
+  locals: { supabase, safeGetSession },
+}) => {
   const { session, user } = await safeGetSession()
   if (!session || !user) {
     throw redirect(303, "/login")
@@ -14,14 +16,19 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
     .eq("id", user.id)
     .single()
 
-  if (!profile || (profile.role !== "employee" && profile.role !== "administrator")) {
+  if (
+    !profile ||
+    (profile.role !== "employee" && profile.role !== "administrator")
+  ) {
     throw redirect(303, "/account")
   }
 
   // Load all open, agent-connected chats
   const { data: activeChats, error: activeChatsError } = await supabase
     .from("live_chats")
-    .select("id, user_id, agent_id, created_at, closed_at, is_connected_to_agent")
+    .select(
+      "id, user_id, agent_id, created_at, closed_at, is_connected_to_agent",
+    )
     .eq("is_connected_to_agent", true)
     .is("closed_at", null)
     .order("created_at", { ascending: false })
@@ -60,7 +67,10 @@ export const actions: Actions = {
       .eq("id", user.id)
       .single()
 
-    if (!profile || (profile.role !== "employee" && profile.role !== "administrator")) {
+    if (
+      !profile ||
+      (profile.role !== "employee" && profile.role !== "administrator")
+    ) {
       return { error: "Not authorized." }
     }
 
@@ -89,7 +99,10 @@ export const actions: Actions = {
     return { success: true }
   },
 
-  sendAgentMessage: async ({ request, locals: { supabase, safeGetSession } }) => {
+  sendAgentMessage: async ({
+    request,
+    locals: { supabase, safeGetSession },
+  }) => {
     const { session, user } = await safeGetSession()
     if (!session || !user) {
       throw redirect(303, "/login")
@@ -109,7 +122,10 @@ export const actions: Actions = {
       .eq("id", user.id)
       .single()
 
-    if (!profile || (profile.role !== "employee" && profile.role !== "administrator")) {
+    if (
+      !profile ||
+      (profile.role !== "employee" && profile.role !== "administrator")
+    ) {
       return { error: "Not authorized." }
     }
 
@@ -126,7 +142,11 @@ export const actions: Actions = {
     if (chat.closed_at) {
       return { error: "Chat is already closed." }
     }
-    if (chat.agent_id && chat.agent_id !== user.id && profile.role !== "administrator") {
+    if (
+      chat.agent_id &&
+      chat.agent_id !== user.id &&
+      profile.role !== "administrator"
+    ) {
       return { error: "You are not assigned to this chat." }
     }
 
@@ -167,7 +187,10 @@ export const actions: Actions = {
       .eq("id", user.id)
       .single()
 
-    if (!profile || (profile.role !== "employee" && profile.role !== "administrator")) {
+    if (
+      !profile ||
+      (profile.role !== "employee" && profile.role !== "administrator")
+    ) {
       return { error: "Not authorized." }
     }
 
@@ -184,7 +207,11 @@ export const actions: Actions = {
     if (chat.closed_at) {
       return { error: "Chat is already closed." }
     }
-    if (chat.agent_id && chat.agent_id !== user.id && profile.role !== "administrator") {
+    if (
+      chat.agent_id &&
+      chat.agent_id !== user.id &&
+      profile.role !== "administrator"
+    ) {
       return { error: "You are not assigned to this chat." }
     }
 
