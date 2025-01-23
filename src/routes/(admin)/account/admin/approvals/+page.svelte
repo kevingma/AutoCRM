@@ -67,7 +67,11 @@
             <td>{emp.company_name}</td>
             <td>{emp.website}</td>
             <td>
-              <form method="POST" action="?/approve" use:enhance={handleApprove}>
+              <form
+                method="POST"
+                action="?/approve"
+                use:enhance={handleApprove}
+              >
                 <input type="hidden" name="employeeId" value={emp.id} />
                 <button class="btn btn-sm btn-primary" type="submit">
                   Approve
@@ -81,5 +85,5 @@
     {#if errors._}
       <div class="text-red-600 font-semibold mt-3">{errors._}</div>
     {/if}
-  {/else}
+  {/if}
 {/if}
