@@ -48,7 +48,9 @@ export const load: PageServerLoad = async ({
     const { data: relatedProfiles } = await supabaseServiceRole
       .from("profiles")
       .select("id")
-      .or(`company_name.eq.${profile.company_name},website.eq.${profile.website}`)
+      .or(
+        `company_name.eq.${profile.company_name},website.eq.${profile.website}`,
+      )
     sharedUserIds = relatedProfiles?.map((p) => p.id) ?? []
     if (!sharedUserIds.includes(user.id)) {
       sharedUserIds.push(user.id)
@@ -97,7 +99,11 @@ export const load: PageServerLoad = async ({
 }
 
 export const actions: Actions = {
-  addReply: async ({ request, locals: { supabase, safeGetSession }, params }) => {
+  addReply: async ({
+    request,
+    locals: { supabase, safeGetSession },
+    params,
+  }) => {
     const { session, user } = await safeGetSession()
     if (!session || !user) {
       throw redirect(303, "/login")
@@ -126,7 +132,11 @@ export const actions: Actions = {
     return { success: true }
   },
 
-  updateTicket: async ({ request, locals: { supabase, safeGetSession }, params }) => {
+  updateTicket: async ({
+    request,
+    locals: { supabase, safeGetSession },
+    params,
+  }) => {
     const { session } = await safeGetSession()
     if (!session) {
       throw redirect(303, "/login")
@@ -147,7 +157,7 @@ export const actions: Actions = {
     if (status !== undefined) fieldsToUpdate.status = status
     if (priority !== undefined) fieldsToUpdate.priority = priority
     if (tags !== undefined) fieldsToUpdate.tags = tags
-    if (assignedTo) fieldsToUpdate.assigned_to = assignedTo  // new field
+    if (assignedTo) fieldsToUpdate.assigned_to = assignedTo // new field
 
     const { error } = await supabase
       .from("tickets")
@@ -172,7 +182,7 @@ export const actions: Actions = {
       throw redirect(303, "/login")
     }
 
-    // 1) check that the user is the ticket owner or it’s within same company 
+    // 1) check that the user is the ticket owner or it’s within same company
     //    (but typically only the user who created the ticket can give feedback)
     //    We'll do a simpler check that user is the ticket's user_id.
     const { data: existingTicket } = await supabase
@@ -187,7 +197,9 @@ export const actions: Actions = {
 
     // optionally confirm the ticket is closed
     if (existingTicket.status !== "closed") {
-      return fail(400, { errorMessage: "You can only leave feedback once the ticket is closed." })
+      return fail(400, {
+        errorMessage: "You can only leave feedback once the ticket is closed.",
+      })
     }
 
     const formData = await request.formData()
@@ -196,7 +208,9 @@ export const actions: Actions = {
     const rating = parseInt(ratingStr, 10)
 
     if (isNaN(rating) || rating < 1 || rating > 5) {
-      return fail(400, { errorMessage: "Rating must be an integer between 1 and 5" })
+      return fail(400, {
+        errorMessage: "Rating must be an integer between 1 and 5",
+      })
     }
 
     // 2) Insert feedback

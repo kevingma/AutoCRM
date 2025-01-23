@@ -6,7 +6,10 @@ import type { PageServerLoad, Actions } from "./$types"
  * If the user is ADMIN + query param `?employeeId=...`, show that user's assigned tickets feedback.
  * If the user is ADMIN with no param, show feedback for all employees in same company.
  */
-export const load: PageServerLoad = async ({ url, locals: { supabase, supabaseServiceRole, safeGetSession } }) => {
+export const load: PageServerLoad = async ({
+  url,
+  locals: { supabase, supabaseServiceRole, safeGetSession },
+}) => {
   const { session, user } = await safeGetSession()
   if (!session || !user) {
     throw redirect(303, "/login")
@@ -45,7 +48,7 @@ export const load: PageServerLoad = async ({ url, locals: { supabase, supabaseSe
     }
   }
 
-  // find all feedback rows for tickets assigned to `targetUserId` 
+  // find all feedback rows for tickets assigned to `targetUserId`
   // (or assigned to any user in same company, if targetUserId = "")
   let assignedIds: string[] = []
 
