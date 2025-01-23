@@ -3,6 +3,7 @@
   import { writable } from "svelte/store"
   import { setContext } from "svelte"
   import { WebsiteName } from "../../../../config"
+  import { page } from "$app/stores"
 
   interface Props {
     children?: import("svelte").Snippet
@@ -10,16 +11,15 @@
 
   let { children }: Props = $props()
 
-  // Create the writable store
+  // Store for highlighting nav in the admin drawer
   const adminSectionStore = writable("")
-
-  // Provide this store to child routes via context
   setContext("adminSection", adminSectionStore)
 
-  // Derive a local reactive variable so we can compare in the template
+  // Derive the userRole from $page data
+  const userRole = $derived($page.data.userRole ?? "")
+
   const adminSectionValue = $derived($adminSectionStore)
 
-  // Close the drawer on mobile
   function closeDrawer(): void {
     const adminDrawer = document.getElementById(
       "admin-drawer",
@@ -63,7 +63,6 @@
 
   <div class="drawer-side">
     <label for="admin-drawer" class="drawer-overlay"></label>
-    <!-- Sidebar now narrower (w-64) and text smaller (text-sm), removing menu-lg -->
     <ul
       class="menu p-4 w-64 min-h-full bg-base-100 lg:border-r text-sm text-primary"
     >
@@ -75,6 +74,8 @@
           <label for="admin-drawer" class="lg:hidden ml-3"> &#x2715; </label>
         </div>
       </li>
+
+      <!-- Main links -->
       <li>
         <a
           href="/account"
@@ -134,35 +135,89 @@
             fill="currentColor"
           >
             <path
-              d="M18,1H6A3,3,0,0,0,3,4V22a1,1,0,0,0,1.8.6L6.829,19.9l1.276,2.552a1,1,0,0,0,.8.549.981.981,0,0,0,.89-.4L12,19.667,14.2,22.6a.983.983,0,0,0,.89.4,1,1,0,0,0,.8-.549L17.171,19.9,19.2,22.6a1,1,0,0,0,.8.4,1,1,0,0,0,1-1V4A3,3,0,0,0,18,1Zm1,18-1.2-1.6a.983.983,0,0,0-.89-.4,1,1,0,0,0-.8.549l-1.276,2.552L12.8,17.4a1,1,0,0,0-1.6,0L9.171,20.105,7.9,17.553A1,1,0,0,0,7.09,17a.987.987,0,0,0-.89.4L5,19V4A1,1,0,0,1,6,3H18a1,1,0,0,1,1,1ZM17,9a1,1,0,0,1-1,1H8A1,1,0,0,1,8,8h8A1,1,0,0,1,17,9Zm-4,4a1,1,0,0,1-1,1H8a1,1,0,0,1,0-2h4A1,1,0,0,1,13,13Z"
+              d="M18,1H6A3,3,0,0,0,3,4V22a1,1,0,0,0,1.8.6L6.829,19.9l1.276,2.552a1,1,0,0,0,.8.549.981.981,0,0,0,.89-.4L12,19.667,14.2,22.6a.983.983,0,0,0,.89.4,1,1,0,0,0,.8-.549L17.171,19.9,19.2,22.6a1,1,0,0,0,1-1V4A3,3,0,0,0,18,1Zm1,18-1.2-1.6a.983.983,0,0,0-.89-.4,1,1,0,0,0-.8.549l-1.276,2.552L12.8,17.4a1,1,0,0,0-1.6,0L9.171,20.105,7.9,17.553A1,1,0,0,0,7.09,17a.987.987,0,0,0-.89.4L5,19V4A1,1,0,0,1,6,3H18a1,1,0,0,1,1,1ZM17,9a1,1,0,0,1-1,1H8A1,1,0,0,1,8,8h8A1,1,0,0,1,17,9Zm-4,4a1,1,0,0,1-1,1H8a1,1,0,0,1,0-2h4A1,1,0,0,1,13,13Z"
             />
           </svg>
           Billing
         </a>
       </li>
+      {#if userRole === "administrator"}
+        <li>
+          <a
+            href="/account/approve_users"
+            class={adminSectionValue === "approvals" ? "active" : ""}
+            onclick={closeDrawer}
+          >
+            <svg
+              class="h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              stroke-width="2"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M16 7a4 4 0 10-8 0 4 4 0 008 0zm6 14v-1a4 4 0 00-3-3.85M15.73 10.1a5 5 0 11-7.46 0M16 19l2 2 4-4"
+              />
+            </svg>
+            Approve Users
+          </a>
+        </li>
+      {/if}
+
+      <!-- Divider to separate main items from the bottom items -->
+      <li class="my-2"><div class="divider"></div></li>
+
+      <!-- Knowledge Base now placed below the divider -->
       <li>
         <a
-          href="/account/approve_users"
-          class={adminSectionValue === "approvals" ? "active" : ""}
+          href="/account/knowledge_base"
+          class={adminSectionValue === "knowledge_base" ? "active" : ""}
           onclick={closeDrawer}
         >
           <svg
             class="h-5 w-5"
+            viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            viewBox="0 0 24 24"
             stroke-width="2"
           >
             <path
               stroke-linecap="round"
               stroke-linejoin="round"
-              d="M16 7a4 4 0 10-8 0 4 4 0 008 0zm6 14v-1a4 4 0 00-3-3.85M15.73 10.1a5 5 0 11-7.46 0M16 19l2 2 4-4"
+              d="M2 5h20v14H2z"
+            />
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M8 5v14M16 5v14M4 8h16M4 16h16"
             />
           </svg>
-          Approve Users
+          Knowledge Base
         </a>
       </li>
-      <!-- Settings and Sign Out together at the bottom -->
+      {#if userRole === "employee" || userRole === "administrator"}
+        <li>
+          <a
+            href="/account/live_chat"
+            class="font-semibold"
+            onclick={closeDrawer}
+          >
+            Live Chat (User)
+          </a>
+        </li>
+        <li>
+          <a
+            href="/account/live_chat"
+            class={adminSectionValue === "live_chat" ? "active" : ""}
+            onclick={closeDrawer}
+          >
+            Agent Live Chat
+          </a>
+        </li>
+      {/if}
+      <!-- Settings and Sign Out together at the very bottom -->
       <li class="mt-auto flex flex-row items-center gap-4">
         <a
           href="/account/settings"

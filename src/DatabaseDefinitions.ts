@@ -191,6 +191,87 @@ export interface Database {
           }
         ]
       }
+      live_chats: {
+        Row: {
+          id: string
+          user_id: string
+          agent_id: string | null
+          created_at: string | null
+          closed_at: string | null
+          is_connected_to_agent: boolean
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          agent_id?: string | null
+          created_at?: string | null
+          closed_at?: string | null
+          is_connected_to_agent?: boolean
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          agent_id?: string | null
+          created_at?: string | null
+          closed_at?: string | null
+          is_connected_to_agent?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_chats_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_chats_agent_id_fkey"
+            columns: ["agent_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+
+      live_chat_messages: {
+        Row: {
+          id: string
+          live_chat_id: string
+          user_id: string
+          role: string
+          message_text: string
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          live_chat_id: string
+          user_id: string
+          role: string
+          message_text: string
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          live_chat_id?: string
+          user_id?: string
+          role?: string
+          message_text?: string
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_chat_messages_live_chat_id_fkey"
+            columns: ["live_chat_id"]
+            referencedRelation: "live_chats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_chat_messages_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: { [_ in never]: never }
     Functions: { [_ in never]: never }
