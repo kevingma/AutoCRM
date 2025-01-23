@@ -312,6 +312,119 @@ export interface Database {
           },
         ]
       }
+      teams: {
+        Row: {
+          id: string
+          name: string
+          focus_area: string | null
+          coverage_start_time_utc: number | null
+          coverage_end_time_utc: number | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          name: string
+          focus_area?: string | null
+          coverage_start_time_utc?: number | null
+          coverage_end_time_utc?: number | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          focus_area?: string | null
+          coverage_start_time_utc?: number | null
+          coverage_end_time_utc?: number | null
+          created_at?: string | null
+        }
+        Relationships: []
+      }
+
+      team_members: {
+        Row: {
+          id: string
+          team_id: string
+          user_id: string
+          role: string | null
+        }
+        Insert: {
+          id?: string
+          team_id: string
+          user_id: string
+          role?: string | null
+        }
+        Update: {
+          id?: string
+          team_id?: string
+          user_id?: string
+          role?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_members_team_id_fkey"
+            columns: ["team_id"]
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_members_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+
+      skills: {
+        Row: {
+          id: string
+          skill_name: string
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          skill_name: string
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          skill_name?: string
+          created_at?: string | null
+        }
+        Relationships: []
+      }
+
+      employee_skills: {
+        Row: {
+          id: string
+          user_id: string
+          skill_id: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          skill_id: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          skill_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_skills_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_skills_skill_id_fkey"
+            columns: ["skill_id"]
+            referencedRelation: "skills"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: { [_ in never]: never }
     Functions: { [_ in never]: never }

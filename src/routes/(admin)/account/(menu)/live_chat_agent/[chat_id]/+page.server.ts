@@ -3,7 +3,7 @@ import type { PageServerLoad, Actions } from "./$types"
 
 export const load: PageServerLoad = async ({
   params,
-  locals: { supabase, supabaseServiceRole, safeGetSession },
+  locals: { supabase, safeGetSession },
 }) => {
   const { session, user } = await safeGetSession()
   if (!session || !user) {

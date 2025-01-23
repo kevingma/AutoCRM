@@ -1,5 +1,6 @@
 import { fail, redirect } from "@sveltejs/kit"
 import type { Actions, PageServerLoad } from "./$types"
+import { autoAssignTicketIfNeeded } from "$lib/server/ticket_routing_helpers.server"
 
 export const load: PageServerLoad = async ({ locals: { safeGetSession } }) => {
   const { session } = await safeGetSession()
@@ -11,7 +12,7 @@ export const load: PageServerLoad = async ({ locals: { safeGetSession } }) => {
 }
 
 export const actions: Actions = {
-  createTicket: async ({ request, locals: { supabase, safeGetSession } }) => {
+  createTicket: async ({ request, locals: { supabase, safeGetSession, supabaseServiceRole } }) => {
     const { session, user } = await safeGetSession()
     if (!session || !user) {
       throw redirect(303, "/login")
@@ -29,17 +30,15 @@ export const actions: Actions = {
       return fail(500, { errorMessage: "Unable to verify your profile" })
     }
 
-    // For employees or customers, ensure they are approved before allowing ticket creation
+    // For employees or customers, ensure they are approved
     if (profile.role === "employee" && !profile.employee_approved) {
       return fail(403, {
-        errorMessage:
-          "Your employee account has not been approved by an administrator.",
+        errorMessage: "Your employee account has not been approved by an administrator.",
       })
     }
     if (profile.role === "customer" && !profile.customer_approved) {
       return fail(403, {
-        errorMessage:
-          "Your customer account has not been approved by an administrator.",
+        errorMessage: "Your customer account has not been approved by an administrator.",
       })
     }
 
@@ -68,18 +67,30 @@ export const actions: Actions = {
     }
 
     // Insert ticket
-    const { error } = await supabase.from("tickets").insert({
-      user_id: user.id,
-      title,
-      description,
-      priority,
-    })
+    const { data: insertTicket, error } = await supabase
+      .from("tickets")
+      .insert({
+        user_id: user.id,
+        title,
+        description,
+        priority,
+      })
+      .select()
+      .single()
 
-    if (error) {
+    if (error || !insertTicket) {
       console.error("Error creating ticket", error)
       return fail(500, {
         errorMessage: "Could not create ticket, please try again",
       })
+    }
+
+    // Call routing logic to auto-assign if needed
+    try {
+      await autoAssignTicketIfNeeded(insertTicket.id, supabaseServiceRole)
+    } catch (routingError) {
+      console.error("Ticket routing failed", routingError)
+      // Not failing the entire creation, just logging
     }
 
     return { success: true }
