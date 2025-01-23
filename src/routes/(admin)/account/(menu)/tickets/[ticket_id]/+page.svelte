@@ -1,6 +1,8 @@
 <script lang="ts">
   import { enhance } from "$app/forms"
   import type { SubmitFunction } from "@sveltejs/kit"
+  import Editor from "@tinymce/tinymce-svelte"
+  import { PUBLIC_TINYMCE_API_KEY } from "$env/static/public"
 
   export let data: {
     ticket: {
@@ -31,6 +33,36 @@
   let replyError: string | null = null
   let updateLoading = false
   let updateError: string | null = null
+
+  // For the rich text editor
+  let replyHtml = ""
+
+  const editorConfig = {
+    height: 300,
+    menubar: false,
+    plugins: [
+      "advlist",
+      "autolink",
+      "lists",
+      "link",
+      "charmap",
+      "preview",
+      "searchreplace",
+      "visualblocks",
+      "code",
+      "fullscreen",
+      "insertdatetime",
+      "table",
+      "wordcount",
+    ],
+    toolbar:
+      "undo redo | formatselect | " +
+      "bold italic | alignleft aligncenter " +
+      "alignright alignjustify | bullist numlist | " +
+      "removeformat",
+    content_style:
+      "body { font-family:Helvetica,Arial,sans-serif; font-size:14px }",
+  }
 
   const handleAddReply: SubmitFunction = () => {
     replyLoading = true
@@ -95,7 +127,8 @@
           {/each}
         </div>
       {/if}
-      <p class="mt-4">{ticket.description}</p>
+      <!-- Show existing description as HTML (assuming it may contain HTML) -->
+      <p class="mt-4">{@html ticket.description}</p>
       {#if ticket.created_at}
         <div class="text-xs text-slate-500 mt-2">
           Created: {new Date(ticket.created_at).toLocaleString()}
@@ -106,7 +139,6 @@
 
   <h2 class="text-xl font-bold mb-2">Replies</h2>
   <div class="space-y-3">
-    <!-- Removed ', i' from the loop to eliminate unused variable -->
     {#each replies as reply}
       <div class="card shadow">
         <div class="card-body">
@@ -121,12 +153,16 @@
               >
             {/if}
           </div>
-          <p class="mt-2">{reply.reply_text}</p>
+          <!-- Render reply as HTML -->
+          <div class="mt-2">
+            {@html reply.reply_text}
+          </div>
         </div>
       </div>
     {/each}
   </div>
 
+  <!-- Add a new reply (rich text) -->
   <div class="mt-8 card shadow">
     <div class="card-body">
       <h3 class="card-title">Add Reply</h3>
@@ -136,12 +172,16 @@
         use:enhance={handleAddReply}
         class="mt-2"
       >
-        <textarea
-          name="reply_text"
-          rows="3"
-          placeholder="Your reply"
-          class="textarea textarea-bordered w-full mb-3"
-        ></textarea>
+        <label for="reply-editor" class="block font-semibold mb-1">Reply</label>
+        <Editor
+          apiKey={PUBLIC_TINYMCE_API_KEY}
+          conf={editorConfig}
+          bind:value={replyHtml}
+          id="reply-editor"
+        />
+        <!-- Hidden input to submit the HTML content -->
+        <input type="hidden" name="reply_text" value={replyHtml} />
+
         {#if canMarkInternal()}
           <label class="label cursor-pointer justify-start gap-3">
             <span class="label-text">Mark as internal note?</span>
@@ -167,6 +207,7 @@
     </div>
   </div>
 
+  <!-- Allow ticket status/priority updates (for employees/admin) -->
   {#if canUpdateTicket()}
     <div class="mt-8 card shadow">
       <div class="card-body">
@@ -183,18 +224,18 @@
               name="status"
               class="select select-bordered w-full max-w-xs mt-1"
             >
-              <option value="open" selected={ticket.status === "open"}
-                >Open</option
-              >
+              <option value="open" selected={ticket.status === "open"}>
+                Open
+              </option>
               <option
                 value="in_progress"
                 selected={ticket.status === "in_progress"}
               >
                 In Progress
               </option>
-              <option value="closed" selected={ticket.status === "closed"}
-                >Closed</option
-              >
+              <option value="closed" selected={ticket.status === "closed"}>
+                Closed
+              </option>
             </select>
           </label>
 

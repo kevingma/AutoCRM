@@ -1,9 +1,41 @@
 <script lang="ts">
-  import { enhance } from "$app/forms" // removed applyAction
+  import { enhance } from "$app/forms"
   import type { SubmitFunction } from "@sveltejs/kit"
+  import Editor from "@tinymce/tinymce-svelte"
+  import { PUBLIC_TINYMCE_API_KEY } from "$env/static/public"
 
   let errors: Record<string, string> = {}
   let loading = false
+
+  // For the rich text editor
+  let descriptionHtml = ""
+
+  const editorConfig = {
+    height: 300,
+    menubar: false,
+    plugins: [
+      "advlist",
+      "autolink",
+      "lists",
+      "link",
+      "charmap",
+      "preview",
+      "searchreplace",
+      "visualblocks",
+      "code",
+      "fullscreen",
+      "insertdatetime",
+      "table",
+      "wordcount",
+    ],
+    toolbar:
+      "undo redo | formatselect | " +
+      "bold italic | alignleft aligncenter " +
+      "alignright alignjustify | bullist numlist | " +
+      "removeformat",
+    content_style:
+      "body { font-family:Helvetica,Arial,sans-serif; font-size:14px }",
+  }
 
   const handleSubmit: SubmitFunction = () => {
     loading = true
@@ -51,18 +83,19 @@
       />
     </div>
 
-    <!-- Details -->
+    <!-- Details (Rich Text) -->
     <div>
       <label for="description" class="block font-semibold mb-1">Details</label>
-      <textarea
+      <Editor
+        apiKey={PUBLIC_TINYMCE_API_KEY}
+        conf={editorConfig}
+        bind:value={descriptionHtml}
         id="description"
-        name="description"
-        rows="4"
-        placeholder="Describe your issue in detail..."
-        class="textarea textarea-bordered w-full {errors.description
-          ? 'textarea-error'
-          : ''}"
-      ></textarea>
+      />
+      <input type="hidden" name="description" value={descriptionHtml} />
+      {#if errors.description}
+        <div class="text-red-600">Please provide more details.</div>
+      {/if}
     </div>
 
     <!-- Priority -->

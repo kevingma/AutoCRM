@@ -49,10 +49,16 @@
     "@supabase/auth-ui-svelte": "^0.2.9",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.45.2",
+    "@tinymce/tinymce-svelte": "^3.0.0",
+    "@tiptap/core": "^2.11.3",
+    "@tiptap/extension-placeholder": "^2.11.3",
+    "@tiptap/pm": "^2.11.3",
+    "@tiptap/starter-kit": "^2.11.3",
     "handlebars": "^4.7.8",
     "openai": "^4.80.0",
     "resend": "^3.5.0",
-    "stripe": "^13.3.0"
+    "stripe": "^13.3.0",
+    "svelte-tiptap": "^2.1.0"
   },
   "overrides": {
     "@supabase/auth-ui-svelte": {

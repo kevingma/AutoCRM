@@ -86,7 +86,7 @@ export const actions: Actions = {
       .insert({
         live_chat_id: chatId,
         user_id: user.id,
-        role: "customer", // or "user"
+        role: "customer",
         message_text: message,
       })
 
@@ -94,8 +94,7 @@ export const actions: Actions = {
       return fail(500, { error: "Failed to send message." })
     }
 
-    // Optionally generate a placeholder AI reply
-    // (You can integrate real AI with openai if you'd like.)
+    // Optional AI placeholder
     const assistantReply = `Hello! (AI placeholder) Thanks for your message: "${message}". We'll get back to you soon.`
 
     // Return whether user is connected to agent

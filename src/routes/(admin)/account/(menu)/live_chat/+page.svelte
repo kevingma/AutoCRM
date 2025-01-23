@@ -48,6 +48,7 @@
   <title>Live Chat</title>
 </svelte:head>
 
+<!-- This page now inherits the side navigation via (menu)/+layout.svelte -->
 <div class="max-w-xl mx-auto py-4">
   <h1 class="text-2xl font-bold mb-4">Live Chat</h1>
 
