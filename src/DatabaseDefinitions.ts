@@ -45,7 +45,6 @@ export interface Database {
           unsubscribed: boolean
           role: string
           employee_approved: boolean
-          // Add this field:
           customer_approved: boolean
         }
         Insert: {
@@ -58,7 +57,6 @@ export interface Database {
           unsubscribed?: boolean
           role?: string
           employee_approved?: boolean
-          // Add this field:
           customer_approved?: boolean
         }
         Update: {
@@ -71,7 +69,6 @@ export interface Database {
           unsubscribed?: boolean
           role?: string
           employee_approved?: boolean
-          // Add this field:
           customer_approved?: boolean
         }
         Relationships: [
@@ -80,7 +77,7 @@ export interface Database {
             columns: ["id"]
             referencedRelation: "users"
             referencedColumns: ["id"]
-          },
+          }
         ]
       }
       stripe_customers: {
@@ -105,7 +102,7 @@ export interface Database {
             columns: ["user_id"]
             referencedRelation: "users"
             referencedColumns: ["id"]
-          },
+          }
         ]
       }
       tickets: {
@@ -119,6 +116,7 @@ export interface Database {
           priority: string | null
           custom_fields: Record<string, unknown> | null
           tags: string[] | null
+          assigned_to: string | null
         }
         Insert: {
           id?: string
@@ -130,6 +128,7 @@ export interface Database {
           priority?: string | null
           custom_fields?: Record<string, unknown> | null
           tags?: string[] | null
+          assigned_to?: string | null
         }
         Update: {
           id?: string
@@ -141,6 +140,7 @@ export interface Database {
           priority?: string | null
           custom_fields?: Record<string, unknown> | null
           tags?: string[] | null
+          assigned_to?: string | null
         }
         Relationships: [
           {
@@ -148,7 +148,7 @@ export interface Database {
             columns: ["user_id"]
             referencedRelation: "users"
             referencedColumns: ["id"]
-          },
+          }
         ]
       }
       ticket_replies: {
@@ -188,7 +188,48 @@ export interface Database {
             columns: ["user_id"]
             referencedRelation: "users"
             referencedColumns: ["id"]
+          }
+        ]
+      }
+
+      ticket_feedback: {
+        Row: {
+          id: string
+          ticket_id: string
+          user_id: string
+          rating: number
+          comment: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          ticket_id: string
+          user_id: string
+          rating: number
+          comment?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          ticket_id?: string
+          user_id?: string
+          rating?: number
+          comment?: string | null
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_feedback_ticket_id_fkey"
+            columns: ["ticket_id"]
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "ticket_feedback_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
         ]
       }
       live_chats: {
@@ -228,10 +269,9 @@ export interface Database {
             columns: ["agent_id"]
             referencedRelation: "users"
             referencedColumns: ["id"]
-          },
+          }
         ]
       }
-
       live_chat_messages: {
         Row: {
           id: string
@@ -269,7 +309,7 @@ export interface Database {
             columns: ["user_id"]
             referencedRelation: "users"
             referencedColumns: ["id"]
-          },
+          }
         ]
       }
     }
