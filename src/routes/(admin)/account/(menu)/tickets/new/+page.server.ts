@@ -12,7 +12,10 @@ export const load: PageServerLoad = async ({ locals: { safeGetSession } }) => {
 }
 
 export const actions: Actions = {
-  createTicket: async ({ request, locals: { supabase, safeGetSession, supabaseServiceRole } }) => {
+  createTicket: async ({
+    request,
+    locals: { supabase, safeGetSession, supabaseServiceRole },
+  }) => {
     const { session, user } = await safeGetSession()
     if (!session || !user) {
       throw redirect(303, "/login")
@@ -33,12 +36,14 @@ export const actions: Actions = {
     // For employees or customers, ensure they are approved
     if (profile.role === "employee" && !profile.employee_approved) {
       return fail(403, {
-        errorMessage: "Your employee account has not been approved by an administrator.",
+        errorMessage:
+          "Your employee account has not been approved by an administrator.",
       })
     }
     if (profile.role === "customer" && !profile.customer_approved) {
       return fail(403, {
-        errorMessage: "Your customer account has not been approved by an administrator.",
+        errorMessage:
+          "Your customer account has not been approved by an administrator.",
       })
     }
 

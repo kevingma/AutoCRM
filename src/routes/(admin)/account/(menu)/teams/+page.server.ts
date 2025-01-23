@@ -2,7 +2,9 @@ import { fail, redirect } from "@sveltejs/kit"
 import type { PageServerLoad, Actions } from "./$types"
 import type { Database } from "../../../../../DatabaseDefinitions"
 
-export const load: PageServerLoad = async ({ locals: { safeGetSession, supabaseServiceRole } }) => {
+export const load: PageServerLoad = async ({
+  locals: { safeGetSession, supabaseServiceRole },
+}) => {
   const { session, user } = await safeGetSession()
   if (!session || !user) {
     throw redirect(303, "/login")
@@ -31,7 +33,10 @@ export const load: PageServerLoad = async ({ locals: { safeGetSession, supabaseS
 }
 
 export const actions: Actions = {
-  createTeam: async ({ request, locals: { safeGetSession, supabaseServiceRole } }) => {
+  createTeam: async ({
+    request,
+    locals: { safeGetSession, supabaseServiceRole },
+  }) => {
     const { session, user } = await safeGetSession()
     if (!session || !user) {
       throw redirect(303, "/login")
@@ -50,8 +55,14 @@ export const actions: Actions = {
     const formData = await request.formData()
     const name = formData.get("teamName")?.toString().trim() || ""
     const focusArea = formData.get("focusArea")?.toString().trim() || "general"
-    const coverageStart = parseInt(formData.get("coverageStart")?.toString() || "0", 10)
-    const coverageEnd = parseInt(formData.get("coverageEnd")?.toString() || "23", 10)
+    const coverageStart = parseInt(
+      formData.get("coverageStart")?.toString() || "0",
+      10,
+    )
+    const coverageEnd = parseInt(
+      formData.get("coverageEnd")?.toString() || "23",
+      10,
+    )
 
     if (!name || name.length < 2) {
       return fail(400, { error: "Team name too short" })
@@ -73,7 +84,10 @@ export const actions: Actions = {
 
     return { success: true }
   },
-  deleteTeam: async ({ request, locals: { safeGetSession, supabaseServiceRole } }) => {
+  deleteTeam: async ({
+    request,
+    locals: { safeGetSession, supabaseServiceRole },
+  }) => {
     const { session, user } = await safeGetSession()
     if (!session || !user) {
       throw redirect(303, "/login")

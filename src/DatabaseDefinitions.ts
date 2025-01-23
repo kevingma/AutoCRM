@@ -371,7 +371,7 @@ export interface Database {
             columns: ["user_id"]
             referencedRelation: "users"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
 
@@ -422,7 +422,7 @@ export interface Database {
             columns: ["skill_id"]
             referencedRelation: "skills"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
     }
