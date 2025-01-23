@@ -28,7 +28,6 @@ export const getOrCreateCustomerId = async ({
     return { customerId: dbCustomer.stripe_customer_id }
   }
 
-  // Fetch data needed to create customer
   const { data: profile, error: profileError } = await supabaseServiceRole
     .from("profiles")
     .select(`full_name, website, company_name`)
@@ -38,7 +37,6 @@ export const getOrCreateCustomerId = async ({
     return { error: profileError }
   }
 
-  // Create a stripe customer
   let customer
   try {
     customer = await stripe.customers.create({
@@ -58,13 +56,12 @@ export const getOrCreateCustomerId = async ({
     return { error: "Unknown stripe user creation error" }
   }
 
-  // insert instead of upsert so we never over-write. PK ensures later attempts error.
   const { error: insertError } = await supabaseServiceRole
     .from("stripe_customers")
     .insert({
       user_id: user.id,
       stripe_customer_id: customer.id,
-      updated_at: new Date(),
+      updated_at: new Date().toISOString(), // <-- changed here
     })
 
   if (insertError) {

@@ -14,8 +14,8 @@
       await update({ reset: false })
       loading = false
       if (result.type === "failure") {
-        messageError = result.data?.error ?? "Failed to send message."
-      } else if (result.type === "success") {
+        messageError = result?.data?.error ?? "Failed to send message."
+      } else if (result.type === "success" && result.data) {
         if (result.data.assistantReply) {
           lastAssistantReply = result.data.assistantReply
         }
@@ -28,15 +28,15 @@
     return async ({ update, result }) => {
       await update({ reset: false })
       if (result.type === "failure") {
-        messageError = result.data?.error ?? "Failed to connect to agent."
-      } else {
+        messageError = result?.data?.error ?? "Failed to connect to agent."
+      } else if (result.type === "success" && result.data) {
         connectedToAgent = true
       }
     }
   }
 
   const handleCloseChat: SubmitFunction = () => {
-    return async ({ update }) => {
+    return async ({ update, result }) => {
       await update({ reset: false })
       // Just reload or navigate away
       location.reload()

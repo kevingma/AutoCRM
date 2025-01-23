@@ -1,9 +1,13 @@
 import { env } from "$env/dynamic/private"
-import type { ChatCompletionRequestMessage } from "openai"
+
+// Define our own interface for request messages:
+interface ChatCompletionRequestMessage {
+  role: "system" | "user" | "assistant"
+  content: string
+}
 
 /**
- * Minimal OpenAI GPT-4 helper. 
- * Replace or adjust with your chosen GPT-4 library or API calls.
+ * Minimal OpenAI GPT-4 helper.
  */
 export async function chatWithOpenAIGpt4o(
   messages: ChatCompletionRequestMessage[],
@@ -15,8 +19,6 @@ export async function chatWithOpenAIGpt4o(
   }
 
   try {
-    // Example fetch call using the official OpenAI REST endpoints
-    // Adjust 'model' to "gpt-4" or "gpt-4-0314" as needed
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {

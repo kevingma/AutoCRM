@@ -1,24 +1,25 @@
 <script lang="ts">
   import { page } from "$app/stores"
-  import { browser } from "$app/environment"
+  import { browser, dev } from "$app/environment"
   import { onMount } from "svelte"
-  import Fuse from "fuse.js"
   import { goto } from "$app/navigation"
-  import { dev } from "$app/environment"
+  import Fuse from "fuse.js"
+  import type { FuseResult } from "fuse.js"
 
-  const fuseOptions = {
-    keys: [
-      { name: "title", weight: 3 },
-      { name: "description", weight: 2 },
-      { name: "body", weight: 1 },
-    ],
-    ignoreLocation: true,
-    threshold: 0.3,
+  interface SearchDoc {
+    title: string
+    description: string
+    body: string
+    path: string
   }
 
-  let fuse
+  let fuse: Fuse<SearchDoc> | undefined
   let loading = $state(true)
   let error = $state(false)
+
+  // The search results come back as Fuse.FuseResult<SearchDoc>[]
+  let results: FuseResult<SearchDoc>[] = $state([])
+
   onMount(async () => {
     try {
       const response = await fetch("/search/api.json")
@@ -27,8 +28,20 @@
       }
       const searchData = await response.json()
       if (searchData && searchData.index && searchData.indexData) {
-        const index = Fuse.parseIndex(searchData.index)
-        fuse = new Fuse(searchData.indexData, fuseOptions, index)
+        const index = Fuse.parseIndex<SearchDoc>(searchData.index)
+        fuse = new Fuse(
+          searchData.indexData,
+          {
+            keys: [
+              { name: "title", weight: 3 },
+              { name: "description", weight: 2 },
+              { name: "body", weight: 1 },
+            ],
+            ignoreLocation: true,
+            threshold: 0.3,
+          },
+          index,
+        )
       }
     } catch (e) {
       console.error("Failed to load search data", e)
@@ -39,7 +52,6 @@
     }
   })
 
-  let results = $state([])
   let searchQuery = $state(decodeURIComponent($page.url.hash.slice(1) ?? ""))
 
   $effect(() => {
@@ -117,9 +129,8 @@
     <div class="text-center mt-10 text-accent text-xl">No results found</div>
     {#if dev}
       <div class="text-center mt-4 font-mono">
-        Development mode only: rebuild your local search index with <code
-          >npm run build</code
-        >.
+        Development mode only: rebuild your local search index with
+        <code>npm run build</code>.
       </div>
     {/if}
   {/if}
