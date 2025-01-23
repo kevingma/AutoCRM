@@ -62,7 +62,11 @@ export const load: PageServerLoad = async ({
 }
 
 export const actions: Actions = {
-  joinChat: async ({ request, locals: { supabase, safeGetSession }, params }) => {
+  joinChat: async ({
+    request,
+    locals: { supabase, safeGetSession },
+    params,
+  }) => {
     const { session, user } = await safeGetSession()
     if (!session || !user) {
       throw redirect(303, "/login")
@@ -76,7 +80,10 @@ export const actions: Actions = {
       .eq("id", user.id)
       .single()
 
-    if (!profile || (profile.role !== "employee" && profile.role !== "administrator")) {
+    if (
+      !profile ||
+      (profile.role !== "employee" && profile.role !== "administrator")
+    ) {
       return fail(403, { error: "Not authorized." })
     }
 
@@ -90,8 +97,14 @@ export const actions: Actions = {
     if (!chat || chat.closed_at) {
       return fail(404, { error: "Chat not found or closed." })
     }
-    if (chat.agent_id && chat.agent_id !== user.id && profile.role !== "administrator") {
-      return fail(403, { error: "Another agent is already assigned to this chat." })
+    if (
+      chat.agent_id &&
+      chat.agent_id !== user.id &&
+      profile.role !== "administrator"
+    ) {
+      return fail(403, {
+        error: "Another agent is already assigned to this chat.",
+      })
     }
 
     // assign agent
@@ -128,7 +141,10 @@ export const actions: Actions = {
       .eq("id", user.id)
       .single()
 
-    if (!profile || (profile.role !== "employee" && profile.role !== "administrator")) {
+    if (
+      !profile ||
+      (profile.role !== "employee" && profile.role !== "administrator")
+    ) {
       return fail(403, { error: "Not authorized." })
     }
     if (!message) {
@@ -148,7 +164,11 @@ export const actions: Actions = {
     if (chat.closed_at) {
       return fail(400, { error: "Chat is already closed." })
     }
-    if (chat.agent_id && chat.agent_id !== user.id && profile.role !== "administrator") {
+    if (
+      chat.agent_id &&
+      chat.agent_id !== user.id &&
+      profile.role !== "administrator"
+    ) {
       return fail(403, { error: "You are not assigned to this chat." })
     }
 
@@ -169,7 +189,11 @@ export const actions: Actions = {
     return { success: true }
   },
 
-  closeChat: async ({ request, locals: { supabase, safeGetSession }, params }) => {
+  closeChat: async ({
+    request,
+    locals: { supabase, safeGetSession },
+    params,
+  }) => {
     const { session, user } = await safeGetSession()
     if (!session || !user) {
       throw redirect(303, "/login")
@@ -182,7 +206,10 @@ export const actions: Actions = {
       .eq("id", user.id)
       .single()
 
-    if (!profile || (profile.role !== "employee" && profile.role !== "administrator")) {
+    if (
+      !profile ||
+      (profile.role !== "employee" && profile.role !== "administrator")
+    ) {
       return fail(403, { error: "Not authorized." })
     }
 
@@ -200,7 +227,11 @@ export const actions: Actions = {
     if (chat.closed_at) {
       return fail(400, { error: "Chat is already closed." })
     }
-    if (chat.agent_id && chat.agent_id !== user.id && profile.role !== "administrator") {
+    if (
+      chat.agent_id &&
+      chat.agent_id !== user.id &&
+      profile.role !== "administrator"
+    ) {
       return fail(403, { error: "You are not assigned to this chat." })
     }
 

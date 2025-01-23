@@ -2,15 +2,21 @@
   import { enhance } from "$app/forms"
   import type { SubmitFunction } from "@sveltejs/kit"
   import Editor from "@tinymce/tinymce-svelte"
-  import { PUBLIC_TINYMCE_API_KEY } from "$env/static/public"
+
+  // CHANGE BELOW: import from $env/dynamic/public instead of $env/static/public
+  import { env as publicEnv } from "$env/dynamic/public"
 
   let errors: Record<string, string> = {}
   let loading = false
+
+  // Use the dynamic public env var, or fallback to an empty string
+  const TINYMCE_API_KEY = publicEnv.PUBLIC_TINYMCE_API_KEY ?? ""
 
   // For the rich text editor
   let descriptionHtml = ""
 
   const editorConfig = {
+    apiKey: TINYMCE_API_KEY, // pass the key here
     height: 300,
     menubar: false,
     plugins: [
@@ -87,7 +93,7 @@
     <div>
       <label for="description" class="block font-semibold mb-1">Details</label>
       <Editor
-        apiKey={PUBLIC_TINYMCE_API_KEY}
+        apiKey={TINYMCE_API_KEY}
         conf={editorConfig}
         bind:value={descriptionHtml}
         id="description"

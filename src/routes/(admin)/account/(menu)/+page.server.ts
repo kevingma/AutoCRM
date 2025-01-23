@@ -2,7 +2,7 @@ import { redirect, fail } from "@sveltejs/kit"
 import type { PageServerLoad } from "./$types"
 
 export const load: PageServerLoad = async ({
-  locals: { supabase, supabaseServiceRole, safeGetSession }
+  locals: { supabase, supabaseServiceRole, safeGetSession },
 }) => {
   const { session, user } = await safeGetSession()
   if (!session || !user) {
@@ -21,7 +21,7 @@ export const load: PageServerLoad = async ({
     return {
       userRole: "",
       stats: {},
-      recentActivity: []
+      recentActivity: [],
     }
   }
 
@@ -31,7 +31,7 @@ export const load: PageServerLoad = async ({
     return {
       userRole,
       stats: {},
-      recentActivity: []
+      recentActivity: [],
     }
   }
 
@@ -41,32 +41,33 @@ export const load: PageServerLoad = async ({
   //   - averageResolutionTime (hours between ticket creation and closed status)
   //   - customerSatisfaction (average rating from ticket_feedback)
   //
-  // We'll treat "assigned_to = user.id" as the key for which tickets they own. 
+  // We'll treat "assigned_to = user.id" as the key for which tickets they own.
   // Admins might see a bigger scope in your real logic, but here we keep it per-user for consistency.
 
   // -- (A) Gather tickets assigned to the user
-  const { data: assignedTickets, error: assignedTicketsError } = await supabaseServiceRole
-    .from("tickets")
-    .select("id, created_at, status")
-    .eq("assigned_to", user.id)
+  const { data: assignedTickets, error: assignedTicketsError } =
+    await supabaseServiceRole
+      .from("tickets")
+      .select("id, created_at, status")
+      .eq("assigned_to", user.id)
   if (assignedTicketsError) {
     console.error("assignedTicketsError", assignedTicketsError)
     return {
       userRole,
       stats: {},
-      recentActivity: []
+      recentActivity: [],
     }
   }
 
   // -- (B) openTicketsCount
-  const openTicketsCount = assignedTickets.filter(t =>
-    t.status === "open" || t.status === "in_progress"
+  const openTicketsCount = assignedTickets.filter(
+    (t) => t.status === "open" || t.status === "in_progress",
   ).length
 
   // -- (C) averageResponseTime
   // We'll find the earliest agent reply for each ticket, measure time difference
   // in minutes from ticket.created_at to that reply.
-  const ticketIds = assignedTickets.map(t => t.id)
+  const ticketIds = assignedTickets.map((t) => t.id)
   let averageResponseTime = 0
   if (ticketIds.length > 0) {
     // fetch replies for these tickets
@@ -83,7 +84,9 @@ export const load: PageServerLoad = async ({
 
     for (const ticket of assignedTickets) {
       // find earliest reply
-      const relevantReplies = (replies || []).filter(r => r.ticket_id === ticket.id)
+      const relevantReplies = (replies || []).filter(
+        (r) => r.ticket_id === ticket.id,
+      )
       if (relevantReplies.length > 0 && ticket.created_at) {
         const earliestReply = relevantReplies.reduce((earliest, r) => {
           if (!earliest) return r
@@ -111,10 +114,12 @@ export const load: PageServerLoad = async ({
   // -- (D) averageResolutionTime
   // For demonstration, let's assume a ticket is "resolved" once it has status=closed
   // We'll measure difference in hours. In real code, you might store a closed_at date
-  // or track the last updated_at. We'll do a naive approach that there is a final reply 
+  // or track the last updated_at. We'll do a naive approach that there is a final reply
   // at time of closure, not in schema. We'll skip advanced logic and just generate a random placeholder or 0 if none.
   let averageResolutionTime = 0
-  const closedTickets = assignedTickets.filter(t => t.status === "closed" && t.created_at)
+  const closedTickets = assignedTickets.filter(
+    (t) => t.status === "closed" && t.created_at,
+  )
   if (closedTickets.length > 0) {
     // pretend we do a more thorough approach, for now let's do a placeholder average
     // in real logic, you'd track the actual closure time. We'll assume 48 hours average
@@ -163,7 +168,7 @@ export const load: PageServerLoad = async ({
       mergedActivity.push({
         type: "ticket",
         id: r.ticket_id,
-        created_at: r.created_at
+        created_at: r.created_at,
       })
     }
   }
@@ -172,7 +177,7 @@ export const load: PageServerLoad = async ({
       mergedActivity.push({
         type: "chat",
         id: c.live_chat_id,
-        created_at: c.created_at
+        created_at: c.created_at,
       })
     }
   }
@@ -189,8 +194,8 @@ export const load: PageServerLoad = async ({
       openTicketsCount,
       averageResponseTime,
       averageResolutionTime,
-      customerSatisfaction
+      customerSatisfaction,
     },
-    recentActivity
+    recentActivity,
   }
 }
