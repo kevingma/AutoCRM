@@ -1,5 +1,6 @@
 import { fail, redirect } from "@sveltejs/kit"
 import type { PageServerLoad, Actions } from "./$types"
+import { sendUserEmail } from "$lib/mailer"
 
 /**
  * Previously, this used `supabase` for queries, which could cause empty replies or ticket
@@ -136,7 +137,6 @@ export const actions: Actions = {
     }
 
     const formData = await request.formData()
-    // Make sure we read the "reply_text" field that the svelte form is sending
     const replyText = formData.get("reply_text")?.toString() || ""
     const isInternal = formData.get("is_internal") === "true"
 
@@ -158,6 +158,43 @@ export const actions: Actions = {
       console.error("Error adding reply", insertError)
       return fail(500, { errorMessage: "Could not add reply" })
     }
+
+    // NEW: If this is a public (non-internal) reply, notify ticket owner
+    if (!isInternal) {
+      // fetch ticket to get user_id & title
+      const { data: ticket } = await supabase
+        .from("tickets")
+        .select("user_id, title")
+        .eq("id", params.ticket_id)
+        .single()
+
+      if (ticket) {
+        // fetch the ticket owner's user info
+        const { data: ownerData } = await supabase.auth.admin.getUserById(
+          ticket.user_id,
+        )
+        const ownerUser = ownerData?.user
+        if (ownerUser?.email && ownerUser.id !== user.id) {
+          // send an email to the owner about the new reply
+          try {
+            await sendUserEmail({
+              user: ownerUser,
+              subject: `New reply on ticket #${params.ticket_id}`,
+              from_email: "no-reply@example.com",
+              template_name: "ticket_reply",
+              template_properties: {
+                TicketId: params.ticket_id,
+                TicketTitle: ticket.title,
+                ReplyText: replyText,
+              },
+            })
+          } catch (e) {
+            console.log("Failed to send reply notification:", e)
+          }
+        }
+      }
+    }
+
     return { success: true }
   },
 
@@ -170,6 +207,18 @@ export const actions: Actions = {
     if (!session) {
       throw redirect(303, "/login")
     }
+
+    // fetch the old ticket to compare status
+    const { data: oldTicket } = await supabase
+      .from("tickets")
+      .select("status, user_id, title")
+      .eq("id", params.ticket_id)
+      .single()
+
+    if (!oldTicket) {
+      return fail(404, { errorMessage: "Ticket not found" })
+    }
+
     const formData = await request.formData()
     const status = formData.get("status") as string
     const priority = formData.get("priority") as string
@@ -181,7 +230,6 @@ export const actions: Actions = {
       tags = tagsRaw.split(",").map((t) => t.trim())
     }
 
-    // build update
     const fieldsToUpdate: Record<string, unknown> = {}
     if (status !== undefined) fieldsToUpdate.status = status
     if (priority !== undefined) fieldsToUpdate.priority = priority
@@ -197,6 +245,33 @@ export const actions: Actions = {
       console.error("Error updating ticket", error)
       return fail(500, { errorMessage: "Could not update ticket" })
     }
+
+    // NEW: If status changed, notify the ticket owner
+    if (status && status !== oldTicket.status) {
+      // fetch the ticket owner's user info
+      const { data: ownerData } = await supabase.auth.admin.getUserById(
+        oldTicket.user_id,
+      )
+      const ownerUser = ownerData?.user
+      if (ownerUser?.email) {
+        try {
+          await sendUserEmail({
+            user: ownerUser,
+            subject: `Ticket #${params.ticket_id} status updated`,
+            from_email: "no-reply@example.com",
+            template_name: "ticket_status",
+            template_properties: {
+              TicketId: params.ticket_id,
+              TicketTitle: oldTicket.title,
+              NewStatus: status,
+            },
+          })
+        } catch (e) {
+          console.log("Failed to send status-change email:", e)
+        }
+      }
+    }
+
     return { success: true }
   },
 

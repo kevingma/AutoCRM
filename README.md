@@ -1,4 +1,3 @@
-
 # AutoCRM
 
 AutoCRM is an AI-powered CRM platform built with **SvelteKit** and **Supabase**, integrating generative AI to streamline ticketing, live chat, and more. It supports role-based user management (customer, employee, admin), multi-step approvals, and flexible integrations (Stripe billing, email automation with Resend, etc.).
@@ -33,25 +32,25 @@ This README covers local development, environment variables, feature highlights,
   - **Customers** open tickets, interact with AI-driven live chat, and see their own data.
   - **Employees** handle tickets, chat with customers, manage knowledge base, etc.
   - **Administrators** manage all data, approve employees/customers, create teams, define coverage hours, etc.
-- **Ticketing System:** 
+- **Ticketing System:**
   - Priority (high, medium, low), status (open, in_progress, closed), and tags (array).
   - Employee assignment, auto-assign logic, and discussion with replies (internal vs. public).
 - **Generative AI for Tickets & Chat:**
   - Automatic "assistant" replies in the live chat unless a human agent is connected.
   - Admin or employees can define AI responses for repetitive tasks.
-- **Teams & Skills:** 
-  - Agents can be grouped into teams (coverage areas). 
+- **Teams & Skills:**
+  - Agents can be grouped into teams (coverage areas).
   - Agents can have associated skills for specialized ticket routing.
-- **Stripe Billing Integration:** 
+- **Stripe Billing Integration:**
   - Basic subscription flow with test plan(s).
   - Billing portal accessible via the admin dashboard.
-- **Email Notifications (via Resend):** 
-  - Optional welcome and admin emails. 
+- **Email Notifications (via Resend):**
+  - Optional welcome and admin emails.
   - Unsubscribe logic stored in the `profiles` table.
-- **Live Chat:** 
-  - Customer chat with auto AI responses, or request an agent. 
+- **Live Chat:**
+  - Customer chat with auto AI responses, or request an agent.
   - Agents see "live chats" assigned or open, can join & close them.
-- **Analytics & Admin Tools:** 
+- **Analytics & Admin Tools:**
   - Optional metrics for agent performance.
   - Pre-built placeholders for integration with email, marketing pages, etc.
 
@@ -82,26 +81,31 @@ This README covers local development, environment variables, feature highlights,
 
 ## Project Setup
 
-1. **Clone the Repository**  
+1. **Clone the Repository**
+
    ```bash
    git clone https://github.com/YourOrg/AutoCRM.git
    cd AutoCRM
    ```
 
-2. **Install Dependencies**  
+2. **Install Dependencies**
+
    ```bash
    npm install
    ```
-   *Note:* This will install all devDependencies and handle SvelteKit, Tailwind, ESLint, etc.
+
+   _Note:_ This will install all devDependencies and handle SvelteKit, Tailwind, ESLint, etc.
 
 3. **Set Up Environment Variables**  
    Copy the example file:
+
    ```bash
    cp .env.example .env
    ```
+
    Then fill in your Supabase, Stripe, and email keys. [See environment details](#environment-variables).
 
-4. **Configure Supabase**  
+4. **Configure Supabase**
    - Create a Supabase project
    - Grab your `PUBLIC_SUPABASE_URL` and `PUBLIC_SUPABASE_ANON_KEY` from the Supabase dashboard
    - Get your `PRIVATE_SUPABASE_SERVICE_ROLE` from the project settings
@@ -112,7 +116,8 @@ This README covers local development, environment variables, feature highlights,
 ## Supabase Setup & Database
 
 1. **Create a Supabase Project** if you haven’t already.
-2. **Apply Database Migrations**  
+2. **Apply Database Migrations**
+
    - The root migrations are stored in `supabase/migrations/`.
    - If you have the [Supabase CLI](https://supabase.com/docs/guides/cli), you can run:
      ```bash
@@ -121,8 +126,8 @@ This README covers local development, environment variables, feature highlights,
      Or manually run the `.sql` files in your Supabase project if you prefer.
    - The project also includes an older `database_migration.sql` as a reference. Typically, rely on `supabase/migrations/` for versioned migrations.
 
-3. **Check RLS & Policies**  
-   - The default row-level security policies allow users to only read/update their own data. 
+3. **Check RLS & Policies**
+   - The default row-level security policies allow users to only read/update their own data.
    - Adjust as needed in the Supabase dashboard or using the `.sql` policy definitions.
 
 ---
@@ -131,8 +136,8 @@ This README covers local development, environment variables, feature highlights,
 
 All environment variables are loaded from `.env` or your hosting provider’s environment settings. Key variables include:
 
-- **PUBLIC_SUPABASE_URL**: The Supabase project URL. 
-- **PUBLIC_SUPABASE_ANON_KEY**: The Supabase anon/public API key. 
+- **PUBLIC_SUPABASE_URL**: The Supabase project URL.
+- **PUBLIC_SUPABASE_ANON_KEY**: The Supabase anon/public API key.
 - **PRIVATE_SUPABASE_SERVICE_ROLE**: A service role key used to handle secure server-side logic.
 - **PRIVATE_STRIPE_API_KEY**: Your secret Stripe key, if using Stripe subscriptions.
 - **PRIVATE_RESEND_API_KEY**: Your Resend key, if sending emails.
@@ -144,46 +149,57 @@ See `.env.example` for more details.
 
 ## Running Locally
 
-1. **Start Development Server**  
+1. **Start Development Server**
+
    ```bash
    npm run dev
    ```
+
    This spins up SvelteKit at [http://localhost:5173/](http://localhost:5173/) (or a similar port).
 
-2. **Visit** [http://localhost:5173/](http://localhost:5173/). 
+2. **Visit** [http://localhost:5173/](http://localhost:5173/).
+
    - The marketing pages (home, blog, pricing) are pre-rendered.
    - The account pages require logging in via Supabase Auth.
 
-3. **Live Reload**  
+3. **Live Reload**
    - Editing Svelte files or TypeScript triggers hot reload.
 
 ---
 
 ## Testing and Linting
 
-- **Run tests**  
+- **Run tests**
+
   ```bash
   npm run test
   ```
+
   or
+
   ```bash
   npm run test_run
   ```
+
   for a single pass.
 
-- **Lint**  
+- **Lint**
+
   ```bash
   npm run lint
   ```
+
   to run ESLint checks.
 
-- **Format Check**  
+- **Format Check**
+
   ```bash
   npm run format_check
   ```
+
   ensures code follows Prettier rules.
 
-- **Spell Check** (requires misspell)  
+- **Spell Check** (requires misspell)
   ```bash
   npm run checks
   ```
@@ -199,6 +215,7 @@ By default, the project uses SvelteKit’s `adapter-auto`. For production, you c
 - Set environment variables in your hosting environment or use `.env` with secrets set accordingly.
 
 **Example** (Vercel):
+
 - Install `@sveltejs/adapter-vercel`
 - Update `svelte.config.js` to use `adapter-vercel`
 - Deploy your repo to Vercel. Make sure the `PUBLIC_SUPABASE_URL`, etc., are set in Vercel’s dashboard.
@@ -208,6 +225,7 @@ By default, the project uses SvelteKit’s `adapter-auto`. For production, you c
 ## Email Setup
 
 The project uses [Resend](https://resend.com/) by default:
+
 - **Set** `PRIVATE_RESEND_API_KEY` in your `.env`.
 - If you want a different provider, adapt `src/lib/mailer.ts` accordingly.
 - See [email_docs.md](./email_docs.md) for more detailed info on customizing and adding new email templates.

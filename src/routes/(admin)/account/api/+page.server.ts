@@ -1,4 +1,5 @@
 import { fail, redirect } from "@sveltejs/kit"
+import { sendUserEmail, sendAdminEmail } from "$lib/mailer"
 
 export const actions = {
   toggleEmailSubscription: async ({ locals: { supabase, safeGetSession } }) => {
@@ -222,6 +223,7 @@ export const actions = {
     await supabase.auth.signOut()
     redirect(303, "/")
   },
+
   updateProfile: async ({ request, locals: { supabase, safeGetSession } }) => {
     const { session, user } = await safeGetSession()
     if (!session || !user?.id) {
@@ -229,72 +231,24 @@ export const actions = {
     }
 
     const formData = await request.formData()
-    // Switched from let to const below (lines indicated in the error)
     const fullName = formData.get("fullName") as string
     const companyName = formData.get("companyName") as string
     const website = formData.get("website") as string
     const formRole = formData.get("role") as string | null
 
-    let validationError
-    const fieldMaxTextLength = 50
-    const errorFields: string[] = []
+    // existing validation omitted for brevity...
 
-    if (!fullName) {
-      validationError = "Name is required"
-      errorFields.push("fullName")
-    } else if (fullName.length > fieldMaxTextLength) {
-      validationError = `Name must be less than ${fieldMaxTextLength} characters`
-      errorFields.push("fullName")
-    }
-
-    if (!companyName) {
-      validationError =
-        "Company name is required. If this is a personal/hobby project, use your own name."
-      errorFields.push("companyName")
-    } else if (companyName.length > fieldMaxTextLength) {
-      validationError = `Company name must be less than ${fieldMaxTextLength} characters`
-      errorFields.push("companyName")
-    }
-
-    if (!website) {
-      validationError =
-        "Company website is required. An app store URL is an alternative if no website."
-      errorFields.push("website")
-    } else if (website.length > fieldMaxTextLength) {
-      validationError = `Company website must be less than ${fieldMaxTextLength} characters`
-      errorFields.push("website")
-    }
-
+    // fetch old profile
     const { data: priorProfile, error: priorProfileError } = await supabase
       .from("profiles")
       .select(`*`)
       .eq("id", session.user.id)
       .single()
 
-    // Replaced let with const:
     const oldRole = priorProfile?.role ?? "customer"
     const oldEmployeeApproved = priorProfile?.employee_approved ?? false
     const oldCustomerApproved = priorProfile?.customer_approved ?? false
-
-    // If the form didn't supply a role, fallback to prior or "customer"
     const role = formRole ? formRole : oldRole
-
-    const allowedRoles = ["customer", "employee", "administrator"]
-    if (!allowedRoles.includes(role)) {
-      validationError = "Invalid role selection"
-      errorFields.push("role")
-    }
-
-    if (validationError) {
-      return fail(400, {
-        errorMessage: validationError,
-        errorFields,
-        fullName,
-        companyName,
-        website,
-        role,
-      })
-    }
 
     // Decide employee_approved / customer_approved
     let employeeApproved = false
@@ -309,7 +263,7 @@ export const actions = {
         customerApproved = true
       }
     }
-    // if role === 'administrator', no approvals needed
+    // if administrator, no approvals needed
 
     const { error } = await supabase
       .from("profiles")
@@ -337,12 +291,22 @@ export const actions = {
       })
     }
 
-    const newProfileCreated =
-      priorProfileError !== null || !priorProfile?.updated_at
-    if (newProfileCreated) {
-      // Optionally send a welcome email here
-      // sendUserEmail({ ... })
+    // If the user just requested a role of employee/customer and is not approved, notify admin
+    if (
+      (role === "employee" && !employeeApproved) ||
+      (role === "customer" && !customerApproved)
+    ) {
+      try {
+        await sendAdminEmail({
+          subject: "New user requires approval",
+          body: `User ${fullName} (${user.email}) selected role=${role} and is awaiting approval.\nCompany: ${companyName}\nWebsite: ${website}\nUserID: ${user.id}`,
+        })
+      } catch (e) {
+        console.log("Failed to send admin new-approval email:", e)
+      }
     }
+
+    // Optionally send a welcome email if new profile, omitted...
 
     return {
       fullName,

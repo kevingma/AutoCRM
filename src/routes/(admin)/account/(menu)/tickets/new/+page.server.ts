@@ -1,6 +1,7 @@
 import { fail, redirect } from "@sveltejs/kit"
 import type { Actions, PageServerLoad } from "./$types"
 import { autoAssignTicketIfNeeded } from "$lib/server/ticket_routing_helpers.server"
+import { sendUserEmail } from "$lib/mailer.js"
 
 export const load: PageServerLoad = async ({ locals: { safeGetSession } }) => {
   const { session } = await safeGetSession()
@@ -96,6 +97,21 @@ export const actions: Actions = {
     } catch (routingError) {
       console.error("Ticket routing failed", routingError)
       // Not failing the entire creation, just logging
+    }
+
+    try {
+      await sendUserEmail({
+        user,
+        subject: `Ticket #${insertTicket.id} created`,
+        from_email: "no-reply@example.com",
+        template_name: "ticket_created",
+        template_properties: {
+          TicketId: insertTicket.id,
+          TicketTitle: insertTicket.title,
+        },
+      })
+    } catch (e) {
+      console.log("Failed to send creation email:", e)
     }
 
     return { success: true }
