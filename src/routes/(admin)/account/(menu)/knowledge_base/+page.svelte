@@ -2,12 +2,11 @@
   import { getContext } from "svelte"
   import type { Writable } from "svelte/store"
 
-  // ADD THESE LINES:
+  // Existing code for side-menu highlight:
   let adminSection: Writable<string> = getContext("adminSection")
   adminSection.set("knowledge_base")
-  // END ADD
 
-  // Example knowledge base articles or FAQs
+  // Keep the existing FAQ logic:
   interface KBEntry {
     question: string
     answer: string
@@ -37,17 +36,14 @@
     },
   ]
 
-  let searchQuery = $state("")
-  let filteredResults = $derived(
-    kbData.filter((entry) => {
-      // Simple case-insensitive search in question and answer
-      const q = searchQuery.toLowerCase()
-      return (
-        entry.question.toLowerCase().includes(q) ||
-        entry.answer.toLowerCase().includes(q)
-      )
-    }),
-  )
+  let searchQuery = ""
+  $: filteredResults = kbData.filter((entry) => {
+    const q = searchQuery.toLowerCase()
+    return (
+      entry.question.toLowerCase().includes(q) ||
+      entry.answer.toLowerCase().includes(q)
+    )
+  })
 </script>
 
 <svelte:head>
@@ -57,7 +53,8 @@
 <div class="flex flex-col gap-4 w-full max-w-2xl mx-auto">
   <h1 class="text-2xl font-bold mt-6">Knowledge Base</h1>
   <p class="text-sm text-gray-600">
-    Find quick answers to frequently asked questions below.
+    Find quick answers to frequently asked questions below, or browse detailed
+    articles by category.
   </p>
 
   <!-- Simple local search -->
@@ -72,6 +69,7 @@
     class="input input-bordered w-full max-w-md"
   />
 
+  <!-- FAQ Section -->
   <div class="mt-4">
     {#if filteredResults.length === 0 && searchQuery.length > 0}
       <p class="text-gray-500 mt-4">No results found for "{searchQuery}".</p>
@@ -90,5 +88,69 @@
         </div>
       {/each}
     {/if}
+  </div>
+
+  <!-- New 3x2 Category Grid -->
+  <h2 class="text-xl font-bold mt-8">Browse by Category</h2>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+    <a
+      href="/account/knowledge_base/getting_started"
+      class="border border-base-300 rounded p-4 hover:bg-base-200 transition cursor-pointer"
+    >
+      <h3 class="font-semibold">Getting Started</h3>
+      <p class="text-sm text-gray-600 mt-1">
+        Installation steps, initial configuration, and quick start guides.
+      </p>
+    </a>
+
+    <a
+      href="/account/knowledge_base/security_compliance"
+      class="border border-base-300 rounded p-4 hover:bg-base-200 transition cursor-pointer"
+    >
+      <h3 class="font-semibold">Security & Compliance</h3>
+      <p class="text-sm text-gray-600 mt-1">
+        Learn about data protection, encryption, and industry standards.
+      </p>
+    </a>
+
+    <a
+      href="/account/knowledge_base/integrations"
+      class="border border-base-300 rounded p-4 hover:bg-base-200 transition cursor-pointer"
+    >
+      <h3 class="font-semibold">Integrations</h3>
+      <p class="text-sm text-gray-600 mt-1">
+        Connect with Stripe, email providers, or CRM tools.
+      </p>
+    </a>
+
+    <a
+      href="/account/knowledge_base/advanced_setup"
+      class="border border-base-300 rounded p-4 hover:bg-base-200 transition cursor-pointer"
+    >
+      <h3 class="font-semibold">Advanced Setup</h3>
+      <p class="text-sm text-gray-600 mt-1">
+        Delve into custom configurations and advanced features.
+      </p>
+    </a>
+
+    <a
+      href="/account/knowledge_base/billing_payments"
+      class="border border-base-300 rounded p-4 hover:bg-base-200 transition cursor-pointer"
+    >
+      <h3 class="font-semibold">Billing & Payments</h3>
+      <p class="text-sm text-gray-600 mt-1">
+        Subscription plans, invoices, and payment troubleshooting.
+      </p>
+    </a>
+
+    <a
+      href="/account/knowledge_base/troubleshooting"
+      class="border border-base-300 rounded p-4 hover:bg-base-200 transition cursor-pointer"
+    >
+      <h3 class="font-semibold">Troubleshooting</h3>
+      <p class="text-sm text-gray-600 mt-1">
+        Common fixes, debugging, and solutions to known issues.
+      </p>
+    </a>
   </div>
 </div>
