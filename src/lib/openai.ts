@@ -12,7 +12,7 @@ interface ChatCompletionRequestMessage {
 export async function chatWithOpenAIGpt4o(
   messages: ChatCompletionRequestMessage[],
 ): Promise<string> {
-  const OPENAI_API_KEY = env.PRIVATE_OPENAI_API_KEY
+  const OPENAI_API_KEY = env.OPENAI_API_KEY
   if (!OPENAI_API_KEY) {
     console.error("No OPENAI_API_KEY found in environment.")
     return "OpenAI is not configured. Please contact support."

@@ -4,6 +4,15 @@
   import { page } from "$app/stores"
   import { onMount, afterUpdate } from "svelte"
 
+  /**
+   * Passed in from +page.server.ts:
+   *   data.chatId (string|null)
+   *   data.isConnectedToAgent (boolean)
+   *   data.messages (array of existing messages)
+   *
+   * We also need to access supabase from $page.data
+   *   let supabase = $page.data.supabase
+   */
   export let data: {
     chatId: string | null
     isConnectedToAgent: boolean
@@ -14,63 +23,120 @@
     }[]
   }
 
+  // We will manage messages locally
+  let messages = [...data.messages]
+
+  // Text typed by the user for the next message
   let messageText = ""
   let sending = false
   let sendError: string | null = null
 
+  // Scroll container ref
   let scrollContainer: HTMLDivElement | null = null
 
+  // Get the supabase client from the page data
+  let supabase
+  $: supabase = $page.data.supabase
+
+  // Auto-scroll to bottom whenever messages update
   function scrollToBottom() {
     if (scrollContainer) {
       scrollContainer.scrollTop = scrollContainer.scrollHeight
     }
   }
-
   onMount(() => {
     scrollToBottom()
+    // If a chatId exists, subscribe to new messages in real-time
+    if (data.chatId) {
+      const channel = supabase
+        .channel(`realtime:live_chat_messages:${data.chatId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "live_chat_messages",
+            filter: `live_chat_id=eq.${data.chatId}`,
+          },
+          (payload) => {
+            // The 'payload.new' contains the newly inserted message row
+            const newMsg = payload.new
+            // If it's not already in our local messages, push it
+            // (We assume 'id' is unique, or you can check by matching other fields)
+            if (!messages.find((m) => m.id === newMsg.id)) {
+              messages = [...messages, newMsg]
+            }
+          },
+        )
+        .subscribe()
+
+      return () => {
+        supabase.removeChannel(channel)
+      }
+    }
   })
+
   afterUpdate(() => {
     scrollToBottom()
   })
 
-  // Submit user’s message -> calls "sendMessage" action
+  // Instead of full page reload, we just call the form action once
+  // and let real-time handle the new AI/agent messages
   const handleSendMessage: SubmitFunction = () => {
     sending = true
     sendError = null
     return async ({ result, update }) => {
-      await update({ reset: false }) // do not reset the entire form
+      await update({ reset: false })
       sending = false
       if (result.type === "failure") {
         sendError = result?.data?.error || "Failed to send"
       } else if (result.type === "success") {
-        // clear the input, let load() re-run
+        // Clear the input but don't reload the page
         messageText = ""
-        // We can also use `invalidate()` if we want to re-fetch. But you can rely on SvelteKit to re-load or use a store for real-time updates.
-        // For simplicity, let's just do a quick manual reload:
-        location.reload()
+        // The real-time listener will pick up the AI/agent response
       }
     }
   }
 
-  // For "Need Human"
   const handleNeedHuman: SubmitFunction = () => {
+    sendError = null
     return async ({ result, update }) => {
       await update({ reset: false })
       if (result.type === "failure") {
         sendError = result?.data?.error || "Failed to connect to agent"
       } else if (result.type === "success") {
-        location.reload()
+        // No reload needed; isConnectedToAgent would update if reloaded, but for now
+        // let's just assume the user will see an agent join eventually
       }
     }
   }
 
-  // For "End Chat"
   const handleCloseChat: SubmitFunction = () => {
     return async ({ result, update }) => {
       await update({ reset: false })
-      // Once ended, let's reload or redirect
-      location.reload()
+      // If success, you can clear the local messages or redirect
+      // For simplicity, let's just do a local reset
+      if (result.type === "success") {
+        messages = []
+      }
     }
+  }
+
+  // Show "You" messages on the right, AI/agent on the left
+  function messageBubbleClass(role: string) {
+    // Customer (the user) is on the right
+    if (role === "customer") return "chat chat-end"
+    // Agent / Assistant on the left
+    return "chat chat-start"
+  }
+
+  // Use different bubble colors
+  function bubbleColor(role: string) {
+    if (role === "customer") return "bg-blue-200"
+    // AI or agent can remain gray / purple
+    if (role === "assistant") return "bg-base-200"
+    if (role === "agent") return "bg-purple-200"
+    return "bg-gray-200"
   }
 
   function displayName(role: string) {
@@ -78,20 +144,6 @@
     if (role === "assistant") return "AI"
     if (role === "agent") return "Agent"
     return "System"
-  }
-
-  function messageBubbleClass(role: string) {
-    // user => chat-start, assistant => chat-end, agent => chat-end, etc.
-    if (role === "customer") return "chat chat-start"
-    return "chat chat-end"
-  }
-
-  // Optional different color classes
-  function bubbleColor(role: string) {
-    if (role === "assistant") return "bg-base-200"
-    if (role === "agent") return "bg-purple-200"
-    if (role === "customer") return "bg-blue-200"
-    return "bg-gray-200"
   }
 </script>
 
@@ -107,12 +159,12 @@
     bind:this={scrollContainer}
     class="flex-1 overflow-auto border border-base-200 rounded p-2"
   >
-    {#if data.messages.length === 0}
+    {#if messages.length === 0}
       <div class="text-gray-500 text-sm mt-4">
         Start by typing a message below!
       </div>
     {:else}
-      {#each data.messages as msg}
+      {#each messages as msg (msg.id)}
         <div class="{messageBubbleClass(msg.role)} my-2">
           <div class="chat-header text-sm mb-1">
             {displayName(msg.role)}

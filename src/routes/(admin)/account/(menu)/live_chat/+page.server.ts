@@ -1,8 +1,17 @@
 import { redirect, fail } from "@sveltejs/kit"
 import type { PageServerLoad, Actions } from "./$types"
-import { chatWithOpenAIGpt4o } from "$lib/openai" // <--- import our GPT-4 function
+import { chatWithOpenAIGpt4o } from "$lib/openai"
 
-export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession } }) => {
+type LiveChatMessage = {
+  id: string
+  role: string
+  message_text: string
+  created_at: string | null
+}
+
+export const load: PageServerLoad = async ({
+  locals: { supabase, safeGetSession },
+}) => {
   const { session, user } = await safeGetSession()
   if (!session || !user) {
     throw redirect(303, "/login")
@@ -27,14 +36,17 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
     .is("closed_at", null)
     .maybeSingle()
 
-  // If there's an open chat, fetch all messages for it
-  let messages = []
+  // Explicitly typed messages array, now including 'id'
+  let messages: LiveChatMessage[] = []
+
   if (existingChat?.id) {
+    // IMPORTANT: Select 'id' so each message has a unique key
     const { data: chatMessages } = await supabase
       .from("live_chat_messages")
-      .select("role, message_text, created_at")
+      .select("id, role, message_text, created_at")
       .eq("live_chat_id", existingChat.id)
       .order("created_at", { ascending: true })
+
     if (chatMessages) {
       messages = chatMessages
     }
@@ -92,6 +104,7 @@ export const actions: Actions = {
         })
         .select()
         .single()
+
       if (chatError || !newChat) {
         return fail(500, { error: "Failed to create a chat." })
       }
@@ -125,7 +138,6 @@ export const actions: Actions = {
 
       if (allMessages) {
         // Convert DB messages to OpenAI Chat format
-        // skipping any 'agent' messages
         const openAiConversation = allMessages
           .filter((m) => m.role === "customer" || m.role === "assistant")
           .map((m) => ({
@@ -133,14 +145,14 @@ export const actions: Actions = {
             content: m.message_text,
           }))
 
-        // Add our new user message at the end
+        // Pass to GPT-4
         const aiReply = await chatWithOpenAIGpt4o(openAiConversation)
 
         // Store the AI's response
         if (aiReply && aiReply.trim().length > 0) {
           await supabase.from("live_chat_messages").insert({
             live_chat_id: chatId,
-            user_id: user.id, // or possibly user.id for consistent foreign key
+            user_id: user.id,
             role: "assistant",
             message_text: aiReply,
           })
@@ -154,7 +166,6 @@ export const actions: Actions = {
   },
 
   connectToAgent: async ({ locals: { supabase, safeGetSession } }) => {
-    // same as before, just the user’s “Need human” button
     const { session, user } = await safeGetSession()
     if (!session || !user) {
       throw redirect(303, "/login")
@@ -189,6 +200,7 @@ export const actions: Actions = {
         })
         .select()
         .single()
+
       if (chatErr || !newChat) {
         return fail(500, { error: "Failed to start a chat for agent." })
       }
@@ -199,6 +211,7 @@ export const actions: Actions = {
         .from("live_chats")
         .update({ is_connected_to_agent: true })
         .eq("id", chatId)
+
       if (updateError) {
         return fail(500, { error: "Failed to request human agent." })
       }
