@@ -24,6 +24,12 @@
       created_at?: string | null
     }[]
     userRole: string
+    // Add optional array of templates
+    templates?: {
+      id: string
+      title: string
+      content: string
+    }[]
   }
 
   let ticket = data.ticket
@@ -101,6 +107,16 @@
   function canUpdateTicket() {
     return userRole === "administrator" || userRole === "employee"
   }
+
+  // Insert a template into the Editor
+  function insertTemplateContent(templateId: string) {
+    if (!data.templates) return
+    const selected = data.templates.find((t) => t.id === templateId)
+    if (selected) {
+      // Append or replace:
+      replyHtml += `<p><br/></p>` + selected.content
+    }
+  }
 </script>
 
 <svelte:head>
@@ -113,72 +129,26 @@
   <div class="card shadow mb-6">
     <div class="card-body">
       <h2 class="card-title">{ticket.title}</h2>
-      <div class="text-sm text-slate-600">
-        Status:
-        {#if ticket.status === "open"}
-          <span class="badge bg-blue-500 text-white">Open</span>
-        {:else if ticket.status === "in_progress"}
-          <span class="badge bg-purple-500 text-white">In Progress</span>
-        {:else if ticket.status === "closed"}
-          <span class="badge bg-green-500 text-white">Closed</span>
-        {:else}
-          {ticket.status}
-        {/if}
-      </div>
-      {#if ticket.priority}
-        <div class="text-sm text-slate-600">
-          Priority:
-          {#if ticket.priority === "high"}
-            <span class="badge bg-red-500 text-white">High</span>
-          {:else if ticket.priority === "medium"}
-            <span class="badge bg-orange-400 text-white">Medium</span>
-          {:else if ticket.priority === "low"}
-            <span class="badge bg-pink-300 text-black">Low</span>
-          {/if}
-        </div>
-      {/if}
-      <!-- Tag display with all gray badges -->
-      {#if ticket.tags && ticket.tags.length > 0}
-        <div class="text-sm text-slate-600 mt-1">
-          Tags:
-          {#each ticket.tags as tag}
-            <span class="badge bg-gray-300 text-gray-800 badge-sm ml-1">
-              {tag}
-            </span>
-          {/each}
-        </div>
-      {/if}
-
-      <!-- Show the existing description as HTML -->
-      <p class="mt-4">{@html ticket.description}</p>
-      {#if ticket.created_at}
-        <div class="text-xs text-slate-500 mt-2">
-          Created: {new Date(ticket.created_at).toLocaleString()}
-        </div>
-      {/if}
+      <div class="mt-2" {...{ innerHTML: ticket.description }}></div>
     </div>
   </div>
 
   <h2 class="text-xl font-bold mb-2">Replies</h2>
   <div class="space-y-3">
-    {#each replies as reply}
-      <div class="card shadow">
-        <div class="card-body">
-          <div class="text-sm text-slate-600">
-            {#if reply.is_internal}
-              <span class="badge badge-warning mr-2">Internal Note</span>
+    {#each replies as r}
+      <div
+        class="border-l-4 pl-3 pb-2"
+        style="border-color: {r.is_internal ? '#ffaa00' : '#444'}"
+      >
+        <p class="text-sm text-gray-600">
+          {r.is_internal ? "Internal Note" : "Public Reply"}
+          <span class="ml-2 text-xs">
+            {#if r.created_at}
+              {new Date(r.created_at).toLocaleString()}
             {/if}
-            <span class="italic">User: {reply.user_id}</span>
-            {#if reply.created_at}
-              <span class="ml-2 text-xs text-slate-500">
-                {new Date(reply.created_at).toLocaleString()}
-              </span>
-            {/if}
-          </div>
-          <div class="mt-2">
-            {@html reply.reply_text}
-          </div>
-        </div>
+          </span>
+        </p>
+        <div class="mt-1" {...{ innerHTML: r.reply_text }}></div>
       </div>
     {/each}
     {#if replies.length === 0}
@@ -190,6 +160,24 @@
   <div class="mt-8 card shadow">
     <div class="card-body">
       <h3 class="card-title">Add Reply</h3>
+      {#if data.templates && data.templates.length > 0}
+        <div class="mb-3">
+          <label for="templateSelect" class="block mb-1 text-sm"
+            >Insert Template</label
+          >
+          <select
+            id="templateSelect"
+            class="select select-bordered w-full max-w-xs"
+            on:change={(evt) =>
+              insertTemplateContent((evt.target as HTMLSelectElement).value)}
+          >
+            <option value="">-- Choose Template --</option>
+            {#each data.templates as t}
+              <option value={t.id}>{t.title}</option>
+            {/each}
+          </select>
+        </div>
+      {/if}
       <form
         method="POST"
         action="?/addReply"
@@ -206,21 +194,24 @@
         <input type="hidden" name="reply_text" value={replyHtml} />
 
         {#if canMarkInternal()}
-          <label class="label cursor-pointer justify-start gap-3">
-            <span class="label-text">Mark as internal note?</span>
-            <input
-              type="checkbox"
-              name="is_internal"
-              value="true"
-              class="checkbox"
-            />
+          <!-- Updated label to nest the checkbox for a11y compliance -->
+          <label class="label cursor-pointer justify-start gap-3 mt-2">
+            <span class="label-text">
+              Mark as internal note?
+              <input
+                type="checkbox"
+                name="is_internal"
+                value="true"
+                class="checkbox"
+              />
+            </span>
           </label>
         {/if}
         {#if replyError}
           <div class="text-red-600">{replyError}</div>
         {/if}
         <button
-          class="btn btn-primary btn-sm"
+          class="btn btn-primary btn-sm mt-3"
           type="submit"
           disabled={replyLoading}
         >

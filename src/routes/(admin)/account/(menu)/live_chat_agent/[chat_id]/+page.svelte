@@ -3,6 +3,7 @@
   import type { Writable } from "svelte/store"
   import { enhance } from "$app/forms"
   import type { SubmitFunction } from "@sveltejs/kit"
+  import { onMount } from "svelte"
 
   // Mark the nav tab as active:
   let adminSection: Writable<string> = getContext("adminSection")
@@ -27,6 +28,14 @@
     userRole: string
     isAssigned: boolean
     isAssignedToMe: boolean
+
+    // Additional: pass an array of agent response templates (or load them via universal fetch).
+    // We'll pretend they've been loaded here:
+    templates?: {
+      id: string
+      title: string
+      content: string
+    }[]
   }
 
   let joinError: string | null = null
@@ -58,7 +67,6 @@
       if (result.type === "failure") {
         sendError = result.data?.error ?? "Failed to send message"
       } else if (result.type === "success") {
-        // re-load page to show new message
         location.reload()
       }
     }
@@ -79,6 +87,19 @@
         // redirect back to chat list
         window.location.href = "/account/live_chat_agent"
       }
+    }
+  }
+
+  // Our typed message for the agent
+  let newMessage = ""
+
+  // Insert template function
+  function insertTemplateContent(templateId: string) {
+    if (!data.templates) return
+    const selected = data.templates.find((t) => t.id === templateId)
+    if (selected) {
+      // Append to existing text, or replace entirely as you prefer:
+      newMessage += (newMessage ? "\n\n" : "") + selected.content
     }
   }
 </script>
@@ -140,12 +161,12 @@
         style="border-color: {msg.role === 'agent' ? 'var(--p)' : '#999'};"
       >
         <div class="text-sm text-gray-500">
-          {msg.role === "agent" ? "Agent" : "User"} –
+          {msg.role === "agent" ? "Agent" : msg.role} –
           {#if msg.created_at}
             {new Date(msg.created_at).toLocaleString()}
           {/if}
         </div>
-        <div>{msg.message_text}</div>
+        <div class="mt-1">{msg.message_text}</div>
       </div>
     {/each}
     {#if data.messages.length === 0}
@@ -158,19 +179,45 @@
     <div class="card shadow mb-8">
       <div class="card-body">
         <h3 class="card-title">Send a Message</h3>
+
+        <!-- Example: Template select menu -->
+        {#if data.templates && data.templates.length > 0}
+          <div class="mb-3">
+            <label for="templateSelect" class="block mb-1 text-sm"
+              >Insert Template</label
+            >
+            <select
+              id="templateSelect"
+              class="select select-bordered w-full max-w-sm"
+              on:change={(evt) =>
+                insertTemplateContent((evt.target as HTMLSelectElement).value)}
+            >
+              <option value="">-- Choose Template --</option>
+              {#each data.templates as t}
+                <option value={t.id}>{t.title}</option>
+              {/each}
+            </select>
+          </div>
+        {/if}
+
         <form
           method="POST"
           action="?/sendAgentMessage"
           use:enhance={handleSendMsg}
         >
-          <label for="message" class="block mt-2 mb-1 font-semibold"
-            >Message</label
-          >
+          <input type="hidden" name="chatId" value={data.chat.id} />
+
+          <label for="agentMessage" class="block mt-2 mb-1 font-semibold">
+            Message
+          </label>
           <textarea
+            id="agentMessage"
             name="message"
             rows="3"
             class="textarea textarea-bordered w-full"
+            bind:value={newMessage}
           ></textarea>
+
           {#if sendError}
             <div class="text-red-600 mt-2">{sendError}</div>
           {/if}
