@@ -28,6 +28,12 @@
     isAssigned: boolean
     isAssignedToMe: boolean
     employeeOptions?: { id: string; full_name: string }[]
+    templates?: {
+      id: string
+      title: string
+      content: string
+      is_shared: boolean
+    }[] // NEW
   }
 
   let ticket = data.ticket
@@ -128,6 +134,15 @@
   function canUpdateTicket() {
     return userRole === "administrator" || userRole === "employee"
   }
+
+  // NEW: Insert a template
+  function insertTemplateContent(templateId: string) {
+    if (!data.templates) return
+    const selected = data.templates.find((t) => t.id === templateId)
+    if (selected) {
+      replyHtml += (replyHtml ? "\n\n" : "") + selected.content
+    }
+  }
 </script>
 
 <svelte:head>
@@ -159,7 +174,6 @@
             {/if}
           </span>
         </p>
-        <!-- Use @html to render the stored HTML reply_text -->
         <div class="mt-1">
           {@html r.reply_text}
         </div>
@@ -174,6 +188,27 @@
   <div class="mt-8 card shadow">
     <div class="card-body">
       <h3 class="card-title">Add Reply</h3>
+
+      <!-- Example: Template select menu (for employee/admin only) -->
+      {#if (userRole === "administrator" || userRole === "employee") && data.templates && data.templates.length > 0}
+        <div class="mb-3 mt-2">
+          <label for="templateSelect" class="block mb-1 text-sm"
+            >Insert Template</label
+          >
+          <select
+            id="templateSelect"
+            class="select select-bordered w-full max-w-sm"
+            on:change={(evt) =>
+              insertTemplateContent((evt.target as HTMLSelectElement).value)}
+          >
+            <option value="">-- Choose Template --</option>
+            {#each data.templates as t}
+              <option value={t.id}>{t.title}</option>
+            {/each}
+          </select>
+        </div>
+      {/if}
+
       <form
         method="POST"
         action="?/addReply"

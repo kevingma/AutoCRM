@@ -96,33 +96,70 @@ export const load: PageServerLoad = async ({
     throw fail(500, { error: "Unable to load replies." })
   }
 
-  // NEW: if user is an administrator, fetch a list of employees to show in "Assign Ticket" dropdown
-  let employeeOptions: { id: string; full_name: string }[] = []
-  if (profile.role === "administrator") {
-    const { data: employees } = await supabaseServiceRole
-      .from("profiles")
-      .select("id, full_name, role")
-      .eq("employee_approved", true)
-      .or(
-        `company_name.eq.${profile.company_name},website.eq.${profile.website}`,
-      )
-    employeeOptions =
-      (employees || [])
-        .filter((e) => e.role === "employee" || e.role === "administrator")
-        .map((e) => ({
-          id: e.id,
-          full_name: e.full_name || e.id,
-        })) ?? []
+  // NEW: if user is an administrator or an approved employee, fetch personal + shared templates
+  let templates: {
+    id: string
+    title: string
+    content: string
+    is_shared: boolean
+  }[] = []
+  if (
+    profile.role === "administrator" ||
+    (profile.role === "employee" && profile.employee_approved)
+  ) {
+    // personal
+    const { data: personalT } = await supabaseServiceRole
+      .from("response_templates")
+      .select("id, title, content, is_shared")
+      .eq("user_id", user.id)
+
+    // shared
+    const { data: sharedT } = await supabaseServiceRole
+      .from("response_templates")
+      .select("id, title, content, is_shared")
+      .eq("is_shared", true)
+
+    templates = [...(personalT || []), ...(sharedT || [])]
   }
 
+  // NEW: pass templates to the page
   return {
     ticket,
     replies,
     userRole: profile.role,
     isAssigned: !!ticket.assigned_to,
     isAssignedToMe: ticket.assigned_to === user.id,
-    employeeOptions,
+    employeeOptions: await fetchEmployeeOptionsIfAdmin(
+      supabaseServiceRole,
+      profile,
+      user,
+    ),
+    templates, // pass down
   }
+}
+
+async function fetchEmployeeOptionsIfAdmin(supabaseSR, profile, user) {
+  // If user is admin, fetch employees for assign dropdown
+  if (profile.role === "administrator") {
+    const { data: employees } = await supabaseSR
+      .from("profiles")
+      .select("id, full_name, role")
+      .eq("employee_approved", true)
+      .or(
+        `company_name.eq.${profile.company_name},website.eq.${profile.website}`,
+      )
+
+    return (
+      employees
+        ?.filter((e) => e.role === "employee" || e.role === "administrator")
+        .map((e) => ({
+          id: e.id,
+          full_name: e.full_name || e.id,
+        })) ?? []
+    )
+  }
+
+  return []
 }
 
 export const actions: Actions = {
