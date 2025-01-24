@@ -3,7 +3,6 @@
   import type { SubmitFunction } from "@sveltejs/kit"
   import Editor from "@tinymce/tinymce-svelte"
 
-  // CHANGE BELOW: import from $env/dynamic/public instead of $env/static/public
   import { env as publicEnv } from "$env/dynamic/public"
 
   export let data: {
@@ -36,13 +35,11 @@
   let updateLoading = false
   let updateError: string | null = null
 
-  // Use the dynamic public env var, or fallback to an empty string
   const TINYMCE_API_KEY = publicEnv.PUBLIC_TINYMCE_API_KEY ?? ""
 
-  // For the rich text editor
   let replyHtml = ""
   const editorConfig = {
-    apiKey: TINYMCE_API_KEY, // pass the key here
+    apiKey: TINYMCE_API_KEY,
     height: 300,
     menubar: false,
     plugins: [
@@ -117,22 +114,42 @@
     <div class="card-body">
       <h2 class="card-title">{ticket.title}</h2>
       <div class="text-sm text-slate-600">
-        Status: <span class="font-bold">{ticket.status}</span>
+        Status:
+        {#if ticket.status === "open"}
+          <span class="badge bg-blue-500 text-white">Open</span>
+        {:else if ticket.status === "in_progress"}
+          <span class="badge bg-purple-500 text-white">In Progress</span>
+        {:else if ticket.status === "closed"}
+          <span class="badge bg-green-500 text-white">Closed</span>
+        {:else}
+          {ticket.status}
+        {/if}
       </div>
       {#if ticket.priority}
         <div class="text-sm text-slate-600">
-          Priority: <span class="font-bold">{ticket.priority}</span>
+          Priority:
+          {#if ticket.priority === "high"}
+            <span class="badge bg-red-500 text-white">High</span>
+          {:else if ticket.priority === "medium"}
+            <span class="badge bg-orange-400 text-white">Medium</span>
+          {:else if ticket.priority === "low"}
+            <span class="badge bg-pink-300 text-black">Low</span>
+          {/if}
         </div>
       {/if}
+      <!-- Tag display with all gray badges -->
       {#if ticket.tags && ticket.tags.length > 0}
-        <div class="text-sm text-slate-600">
+        <div class="text-sm text-slate-600 mt-1">
           Tags:
           {#each ticket.tags as tag}
-            <span class="badge badge-outline badge-sm ml-1">{tag}</span>
+            <span class="badge bg-gray-300 text-gray-800 badge-sm ml-1">
+              {tag}
+            </span>
           {/each}
         </div>
       {/if}
-      <!-- Show existing description as HTML (assuming it may contain HTML) -->
+
+      <!-- Show the existing description as HTML -->
       <p class="mt-4">{@html ticket.description}</p>
       {#if ticket.created_at}
         <div class="text-xs text-slate-500 mt-2">
@@ -153,21 +170,23 @@
             {/if}
             <span class="italic">User: {reply.user_id}</span>
             {#if reply.created_at}
-              <span class="ml-2 text-xs text-slate-500"
-                >{new Date(reply.created_at).toLocaleString()}</span
-              >
+              <span class="ml-2 text-xs text-slate-500">
+                {new Date(reply.created_at).toLocaleString()}
+              </span>
             {/if}
           </div>
-          <!-- Render reply as HTML -->
           <div class="mt-2">
             {@html reply.reply_text}
           </div>
         </div>
       </div>
     {/each}
+    {#if replies.length === 0}
+      <p class="text-gray-500">No replies yet.</p>
+    {/if}
   </div>
 
-  <!-- Add a new reply (rich text) -->
+  <!-- Add new reply -->
   <div class="mt-8 card shadow">
     <div class="card-body">
       <h3 class="card-title">Add Reply</h3>
@@ -184,7 +203,6 @@
           bind:value={replyHtml}
           id="reply-editor"
         />
-        <!-- Hidden input to submit the HTML content -->
         <input type="hidden" name="reply_text" value={replyHtml} />
 
         {#if canMarkInternal()}
@@ -212,7 +230,7 @@
     </div>
   </div>
 
-  <!-- Allow ticket status/priority updates (for employees/admin) -->
+  <!-- Update ticket form (employees/admin only) -->
   {#if canUpdateTicket()}
     <div class="mt-8 card shadow">
       <div class="card-body">
@@ -229,30 +247,37 @@
               name="status"
               class="select select-bordered w-full max-w-xs mt-1"
             >
-              <option value="open" selected={ticket.status === "open"}>
-                Open
-              </option>
+              <option value="open" selected={ticket.status === "open"}
+                >Open</option
+              >
               <option
                 value="in_progress"
                 selected={ticket.status === "in_progress"}
               >
                 In Progress
               </option>
-              <option value="closed" selected={ticket.status === "closed"}>
-                Closed
-              </option>
+              <option value="closed" selected={ticket.status === "closed"}
+                >Closed</option
+              >
             </select>
           </label>
 
           <label class="block mb-2">
             <span class="text-sm font-semibold">Priority</span>
-            <input
-              type="text"
+            <select
               name="priority"
-              value={ticket.priority ?? ""}
-              placeholder="e.g. High, Medium, Low"
-              class="input input-bordered w-full max-w-xs mt-1"
-            />
+              class="select select-bordered w-full max-w-xs mt-1"
+            >
+              <option value="high" selected={ticket.priority === "high"}
+                >High</option
+              >
+              <option value="medium" selected={ticket.priority === "medium"}
+                >Medium</option
+              >
+              <option value="low" selected={ticket.priority === "low"}
+                >Low</option
+              >
+            </select>
           </label>
 
           <label class="block mb-2">
