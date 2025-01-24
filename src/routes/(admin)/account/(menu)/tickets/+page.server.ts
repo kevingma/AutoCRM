@@ -1,4 +1,4 @@
-import { redirect } from "@sveltejs/kit" // removed fail import
+import { redirect } from "@sveltejs/kit"
 import type { PageServerLoad } from "./$types"
 
 export const load: PageServerLoad = async ({
@@ -26,7 +26,6 @@ export const load: PageServerLoad = async ({
   const website = profile.website
   let sharedUserIds: string[] = []
 
-  // Admin or (approved) employee => see same-company tickets. Otherwise see your own & same company/website.
   if (role === "administrator") {
     const { data: relatedProfiles } = await supabaseServiceRole
       .from("profiles")
@@ -41,7 +40,6 @@ export const load: PageServerLoad = async ({
         .or(`company_name.eq.${companyName},website.eq.${website}`)
       sharedUserIds = relatedProfiles?.map((p) => p.id) ?? []
     } else {
-      // not approved => only own
       sharedUserIds = [user.id]
     }
   } else {
@@ -56,11 +54,14 @@ export const load: PageServerLoad = async ({
     }
   }
 
-  // Filter by status and priority, then sort by time
+  // Existing filter parameters
   const statusParam = url.searchParams.get("status") || "open"
   const sortParam = url.searchParams.get("sort") || "desc"
   const priorityParam = url.searchParams.get("priority") || "all"
   const ascending = sortParam === "asc"
+
+  // NEW: Search parameter
+  const searchParam = url.searchParams.get("search") || ""
 
   let query = supabase.from("tickets").select("*").in("user_id", sharedUserIds)
 
@@ -74,6 +75,14 @@ export const load: PageServerLoad = async ({
 
   if (priorityParam !== "all") {
     query = query.eq("priority", priorityParam)
+  }
+
+  // Updated search logic to handle OR with cast to text for tags
+  if (searchParam) {
+    const likePattern = `%${searchParam}%`
+    query = query.or(
+      `title.ilike.${likePattern},description.ilike.${likePattern},tags::text.ilike.${likePattern}`
+    )
   }
 
   query = query.order("created_at", { ascending })
@@ -92,7 +101,6 @@ export const load: PageServerLoad = async ({
     statusParam,
     sortParam,
     priorityParam,
+    searchParam, // expose search param to the front-end
   }
 }
-
-// Removed createTicket action from this file. That action is now in /tickets/new/+page.server.ts

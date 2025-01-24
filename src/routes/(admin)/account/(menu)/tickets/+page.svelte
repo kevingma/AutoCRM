@@ -9,7 +9,6 @@
     tickets: {
       id: string
       title: string
-      // Removed: description: string
       status: string
       created_at: string
       priority: string | null
@@ -20,7 +19,11 @@
     statusParam: string
     sortParam: string
     priorityParam: string
+    searchParam: string // new
   }
+
+  // We'll bind this to the search input. If changed, user must click "Apply".
+  let searchInput = data.searchParam
 </script>
 
 <svelte:head>
@@ -35,7 +38,9 @@
     </a>
   </div>
 
+  <!-- Filters form -->
   <form method="GET" class="flex flex-wrap gap-4 items-end">
+    <!-- Status -->
     <div>
       <label for="status" class="block font-semibold mb-1">Status</label>
       <select
@@ -58,13 +63,14 @@
         >
           Open & In Progress
         </option>
-        <option value="closed" selected={data.statusParam === "closed"}
-          >Closed</option
-        >
+        <option value="closed" selected={data.statusParam === "closed"}>
+          Closed
+        </option>
         <option value="all" selected={data.statusParam === "all"}>All</option>
       </select>
     </div>
 
+    <!-- Priority -->
     <div>
       <label for="priority" class="block font-semibold mb-1">Priority</label>
       <select
@@ -77,13 +83,14 @@
         <option value="high" selected={data.priorityParam === "high"}
           >High</option
         >
-        <option value="medium" selected={data.priorityParam === "medium"}
-          >Medium</option
-        >
+        <option value="medium" selected={data.priorityParam === "medium"}>
+          Medium
+        </option>
         <option value="low" selected={data.priorityParam === "low"}>Low</option>
       </select>
     </div>
 
+    <!-- Sort by time -->
     <div>
       <label for="sort" class="block font-semibold mb-1">Time</label>
       <select id="sort" name="sort" class="select select-bordered">
@@ -96,15 +103,28 @@
       </select>
     </div>
 
+    <!-- New: Search by text -->
+    <div>
+      <label for="search" class="block font-semibold mb-1">Search</label>
+      <input
+        id="search"
+        name="search"
+        type="text"
+        placeholder="Keyword..."
+        class="input input-bordered w-48"
+        bind:value={searchInput}
+      />
+    </div>
+
     <button type="submit" class="btn btn-primary mt-2">Apply</button>
   </form>
 
+  <!-- Ticket Table -->
   <div class="overflow-x-auto grow">
     <table class="table w-full mt-4">
       <thead>
         <tr>
           <th class="bg-base-200">Title</th>
-          <!-- Removed Description column -->
           <th class="bg-base-200">Created</th>
           <th class="bg-base-200">Priority</th>
           <th class="bg-base-200">Status</th>

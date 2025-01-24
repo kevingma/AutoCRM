@@ -15,6 +15,7 @@
       priority?: string | null
       tags?: string[] | null
       created_at?: string | null
+      assigned_to?: string | null
     }
     replies: {
       id: string
@@ -24,22 +25,24 @@
       created_at?: string | null
     }[]
     userRole: string
-    // Add optional array of templates
-    templates?: {
-      id: string
-      title: string
-      content: string
-    }[]
+    isAssigned: boolean
+    isAssignedToMe: boolean
+    employeeOptions?: { id: string; full_name: string }[]
   }
 
   let ticket = data.ticket
   let replies = data.replies
   let userRole = data.userRole
 
+  // If user is an admin, data.employeeOptions will be available.
+  let employees = data.employeeOptions ?? []
+
   let replyLoading = false
   let replyError: string | null = null
   let updateLoading = false
   let updateError: string | null = null
+  let claimLoading = false
+  let claimError: string | null = null
 
   const TINYMCE_API_KEY = publicEnv.PUBLIC_TINYMCE_API_KEY ?? ""
 
@@ -72,6 +75,7 @@
       "body { font-family:Helvetica,Arial,sans-serif; font-size:14px }",
   }
 
+  // For adding a reply
   const handleAddReply: SubmitFunction = () => {
     replyLoading = true
     replyError = null
@@ -86,6 +90,7 @@
     }
   }
 
+  // For updating the ticket (status, priority, tags, assigned_to)
   const handleUpdateTicket: SubmitFunction = () => {
     updateLoading = true
     updateError = null
@@ -100,22 +105,27 @@
     }
   }
 
+  // For employee to claim an unassigned ticket
+  const handleClaimTicket: SubmitFunction = () => {
+    claimLoading = true
+    claimError = null
+    return async ({ update, result }) => {
+      await update({ reset: false })
+      claimLoading = false
+      if (result.type === "failure") {
+        claimError = result.data?.errorMessage || "Could not claim"
+      } else if (result.type === "success") {
+        location.reload()
+      }
+    }
+  }
+
   function canMarkInternal() {
     return userRole === "administrator" || userRole === "employee"
   }
 
   function canUpdateTicket() {
     return userRole === "administrator" || userRole === "employee"
-  }
-
-  // Insert a template into the Editor
-  function insertTemplateContent(templateId: string) {
-    if (!data.templates) return
-    const selected = data.templates.find((t) => t.id === templateId)
-    if (selected) {
-      // Append or replace:
-      replyHtml += `<p><br/></p>` + selected.content
-    }
   }
 </script>
 
@@ -160,24 +170,6 @@
   <div class="mt-8 card shadow">
     <div class="card-body">
       <h3 class="card-title">Add Reply</h3>
-      {#if data.templates && data.templates.length > 0}
-        <div class="mb-3">
-          <label for="templateSelect" class="block mb-1 text-sm"
-            >Insert Template</label
-          >
-          <select
-            id="templateSelect"
-            class="select select-bordered w-full max-w-xs"
-            on:change={(evt) =>
-              insertTemplateContent((evt.target as HTMLSelectElement).value)}
-          >
-            <option value="">-- Choose Template --</option>
-            {#each data.templates as t}
-              <option value={t.id}>{t.title}</option>
-            {/each}
-          </select>
-        </div>
-      {/if}
       <form
         method="POST"
         action="?/addReply"
@@ -194,7 +186,6 @@
         <input type="hidden" name="reply_text" value={replyHtml} />
 
         {#if canMarkInternal()}
-          <!-- Updated label to nest the checkbox for a11y compliance -->
           <label class="label cursor-pointer justify-start gap-3 mt-2">
             <span class="label-text">
               Mark as internal note?
@@ -220,6 +211,27 @@
       </form>
     </div>
   </div>
+
+  <!-- Claim ticket if unassigned (employee or admin) -->
+  {#if ticket.assigned_to == null && (userRole === "administrator" || userRole === "employee")}
+    <form
+      method="POST"
+      action="?/claimTicket"
+      use:enhance={handleClaimTicket}
+      class="mt-4"
+    >
+      {#if claimError}
+        <div class="text-red-600 mb-2">{claimError}</div>
+      {/if}
+      <button
+        class="btn btn-sm btn-accent"
+        type="submit"
+        disabled={claimLoading}
+      >
+        {claimLoading ? "Claiming..." : "Claim Ticket"}
+      </button>
+    </form>
+  {/if}
 
   <!-- Update ticket form (employees/admin only) -->
   {#if canUpdateTicket()}
@@ -281,6 +293,27 @@
               class="input input-bordered w-full max-w-xs mt-1"
             />
           </label>
+
+          {#if userRole === "administrator"}
+            <!-- Admin: can assign to any employee or admin in the org -->
+            <label class="block mb-2">
+              <span class="text-sm font-semibold">Assigned To</span>
+              <select
+                name="assigned_to"
+                class="select select-bordered w-full max-w-xs mt-1"
+              >
+                <option value=""> -- None -- </option>
+                {#each employees as emp}
+                  <option
+                    value={emp.id}
+                    selected={ticket.assigned_to === emp.id}
+                  >
+                    {emp.full_name}
+                  </option>
+                {/each}
+              </select>
+            </label>
+          {/if}
 
           {#if updateError}
             <div class="text-red-600 mt-2">{updateError}</div>

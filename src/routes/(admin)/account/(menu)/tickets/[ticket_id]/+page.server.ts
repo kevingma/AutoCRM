@@ -10,18 +10,18 @@ export const load: PageServerLoad = async ({
     throw redirect(303, "/login")
   }
 
-  // fetch user profile
+  // Confirm user is part of the ticket's org or is the ticket owner
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("role, company_name, website, employee_approved")
     .eq("id", user.id)
     .single()
+
   if (profileError || !profile) {
-    console.error("Error fetching profile or missing", profileError)
-    throw fail(500, { message: "Unable to load your profile." })
+    throw fail(500, { error: "Could not load profile" })
   }
 
-  // same logic as existing code to gather sharedUserIds
+  // gather sharedUserIds
   let sharedUserIds: string[] = []
   if (profile.role === "administrator") {
     const { data: relatedProfiles } = await supabaseServiceRole
@@ -69,7 +69,7 @@ export const load: PageServerLoad = async ({
     throw redirect(303, "/account/tickets")
   }
 
-  // fetch replies (existing logic)
+  // fetch replies
   let repliesQuery = supabase
     .from("ticket_replies")
     .select("*")
@@ -77,7 +77,7 @@ export const load: PageServerLoad = async ({
     .order("created_at", { ascending: true })
 
   if (profile.role === "administrator") {
-    // show all including internal
+    // show all
   } else if (profile.role === "employee" && !profile.employee_approved) {
     repliesQuery = repliesQuery.eq("is_internal", false)
   } else if (profile.role === "customer") {
@@ -88,13 +88,35 @@ export const load: PageServerLoad = async ({
 
   if (repliesError) {
     console.error("Error fetching ticket replies", repliesError)
-    throw fail(500, { message: "Unable to load replies." })
+    throw fail(500, { error: "Unable to load replies." })
+  }
+
+  // NEW: if user is an administrator, fetch a list of employees to show in "Assign Ticket" dropdown
+  let employeeOptions: { id: string; full_name: string }[] = []
+  if (profile.role === "administrator") {
+    const { data: employees } = await supabaseServiceRole
+      .from("profiles")
+      .select("id, full_name, role")
+      .eq("employee_approved", true)
+      .or(
+        `company_name.eq.${profile.company_name},website.eq.${profile.website}`,
+      )
+    employeeOptions =
+      (employees || [])
+        .filter((e) => e.role === "employee" || e.role === "administrator")
+        .map((e) => ({
+          id: e.id,
+          full_name: e.full_name || e.id,
+        })) ?? []
   }
 
   return {
     ticket,
     replies,
     userRole: profile.role,
+    isAssigned: !!ticket.assigned_to,
+    isAssignedToMe: ticket.assigned_to === user.id,
+    employeeOptions, // for the admin to assign
   }
 }
 
@@ -157,7 +179,7 @@ export const actions: Actions = {
     if (status !== undefined) fieldsToUpdate.status = status
     if (priority !== undefined) fieldsToUpdate.priority = priority
     if (tags !== undefined) fieldsToUpdate.tags = tags
-    if (assignedTo) fieldsToUpdate.assigned_to = assignedTo // new field
+    if (assignedTo) fieldsToUpdate.assigned_to = assignedTo
 
     const { error } = await supabase
       .from("tickets")
@@ -171,7 +193,6 @@ export const actions: Actions = {
     return { success: true }
   },
 
-  // ADDED: let the customer leave feedback for the ticket, if closed
   addFeedback: async ({
     request,
     locals: { supabase, safeGetSession },
@@ -182,9 +203,6 @@ export const actions: Actions = {
       throw redirect(303, "/login")
     }
 
-    // 1) check that the user is the ticket owner or it’s within same company
-    //    (but typically only the user who created the ticket can give feedback)
-    //    We'll do a simpler check that user is the ticket's user_id.
     const { data: existingTicket } = await supabase
       .from("tickets")
       .select("id, user_id, status")
@@ -195,7 +213,6 @@ export const actions: Actions = {
       return fail(403, { errorMessage: "Not authorized to leave feedback" })
     }
 
-    // optionally confirm the ticket is closed
     if (existingTicket.status !== "closed") {
       return fail(400, {
         errorMessage: "You can only leave feedback once the ticket is closed.",
@@ -213,7 +230,6 @@ export const actions: Actions = {
       })
     }
 
-    // 2) Insert feedback
     const { error: insertFeedbackError } = await supabase
       .from("ticket_feedback")
       .insert({
@@ -226,6 +242,60 @@ export const actions: Actions = {
     if (insertFeedbackError) {
       console.error("Error adding feedback", insertFeedbackError)
       return fail(500, { errorMessage: "Could not add feedback" })
+    }
+
+    return { success: true }
+  },
+
+  // NEW action for employees to claim an unassigned ticket
+  claimTicket: async ({ locals: { supabase, safeGetSession }, params }) => {
+    const { session, user } = await safeGetSession()
+    if (!session || !user) {
+      throw redirect(303, "/login")
+    }
+
+    // Confirm user is employee or admin
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role, employee_approved")
+      .eq("id", user.id)
+      .single()
+
+    if (!profile) {
+      return fail(403, { errorMessage: "Not authorized" })
+    }
+    if (
+      profile.role !== "administrator" &&
+      (profile.role !== "employee" || !profile.employee_approved)
+    ) {
+      return fail(403, { errorMessage: "Not authorized" })
+    }
+
+    // fetch the ticket
+    const { data: ticket } = await supabase
+      .from("tickets")
+      .select("id, assigned_to, status")
+      .eq("id", params.ticket_id)
+      .single()
+
+    if (!ticket) {
+      return fail(404, { errorMessage: "Ticket not found" })
+    }
+
+    // claim only if unassigned
+    if (ticket.assigned_to) {
+      return fail(400, { errorMessage: "Ticket is already assigned" })
+    }
+
+    // update
+    const { error: updateErr } = await supabase
+      .from("tickets")
+      .update({ assigned_to: user.id, status: "in_progress" })
+      .eq("id", params.ticket_id)
+
+    if (updateErr) {
+      console.error("Error claiming ticket", updateErr)
+      return fail(500, { errorMessage: "Could not claim ticket" })
     }
 
     return { success: true }
