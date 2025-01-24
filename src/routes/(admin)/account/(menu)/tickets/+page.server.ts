@@ -54,7 +54,7 @@ export const load: PageServerLoad = async ({
     }
   }
 
-  // Existing filter parameters
+  // Filter params
   const statusParam = url.searchParams.get("status") || "open"
   const sortParam = url.searchParams.get("sort") || "desc"
   const priorityParam = url.searchParams.get("priority") || "all"
@@ -77,12 +77,17 @@ export const load: PageServerLoad = async ({
     query = query.eq("priority", priorityParam)
   }
 
-  // Updated search logic to handle OR with cast to text for tags
   if (searchParam) {
     const likePattern = `%${searchParam}%`
+    // Search in title and description using ilike
     query = query.or(
-      `title.ilike.${likePattern},description.ilike.${likePattern},tags::text.ilike.${likePattern}`,
+      `title.ilike.${likePattern},description.ilike.${likePattern}`,
     )
+
+    // Search tags using cs (contains)
+    if (searchParam.trim()) {
+      query = query.or(`tags.cs.{${searchParam.trim()}}`)
+    }
   }
 
   query = query.order("created_at", { ascending })
@@ -101,6 +106,6 @@ export const load: PageServerLoad = async ({
     statusParam,
     sortParam,
     priorityParam,
-    searchParam, // expose search param to the front-end
+    searchParam, // expose search param
   }
 }
