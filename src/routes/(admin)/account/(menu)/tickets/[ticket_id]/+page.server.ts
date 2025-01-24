@@ -1,6 +1,11 @@
 import { fail, redirect } from "@sveltejs/kit"
 import type { PageServerLoad, Actions } from "./$types"
 
+/**
+ * Previously, this used `supabase` for queries, which could cause empty replies or ticket
+ * data if RLS policies weren't set for all roles. Switching to `supabaseServiceRole`
+ * ensures we can fetch the data and then enforce user-level checks in code.
+ */
 export const load: PageServerLoad = async ({
   params,
   locals: { supabase, supabaseServiceRole, safeGetSession },
@@ -57,8 +62,8 @@ export const load: PageServerLoad = async ({
     }
   }
 
-  // fetch the ticket
-  const { data: ticket, error: ticketError } = await supabase
+  // fetch the ticket using serviceRole
+  const { data: ticket, error: ticketError } = await supabaseServiceRole
     .from("tickets")
     .select("*")
     .eq("id", params.ticket_id)
@@ -69,8 +74,8 @@ export const load: PageServerLoad = async ({
     throw redirect(303, "/account/tickets")
   }
 
-  // fetch replies
-  let repliesQuery = supabase
+  // fetch replies using serviceRole
+  let repliesQuery = supabaseServiceRole
     .from("ticket_replies")
     .select("*")
     .eq("ticket_id", ticket.id)
@@ -85,7 +90,6 @@ export const load: PageServerLoad = async ({
   }
 
   const { data: replies, error: repliesError } = await repliesQuery
-
   if (repliesError) {
     console.error("Error fetching ticket replies", repliesError)
     throw fail(500, { error: "Unable to load replies." })
@@ -116,28 +120,27 @@ export const load: PageServerLoad = async ({
     userRole: profile.role,
     isAssigned: !!ticket.assigned_to,
     isAssignedToMe: ticket.assigned_to === user.id,
-    employeeOptions, // for the admin to assign
+    employeeOptions,
   }
 }
 
 export const actions: Actions = {
-  addReply: async ({
-    request,
-    locals: { supabase, safeGetSession },
-    params,
-  }) => {
+  addReply: async ({ request, locals: { supabase, safeGetSession }, params }) => {
     const { session, user } = await safeGetSession()
     if (!session || !user) {
       throw redirect(303, "/login")
     }
+
     const formData = await request.formData()
-    const replyText = formData.get("reply_text") as string
+    // Make sure we read the "reply_text" field that the svelte form is sending
+    const replyText = formData.get("reply_text")?.toString() || ""
     const isInternal = formData.get("is_internal") === "true"
 
     if (!replyText || replyText.length < 2) {
       return fail(400, { errorMessage: "Reply text must be at least 2 chars" })
     }
 
+    // Insert the reply
     const { error: insertError } = await supabase
       .from("ticket_replies")
       .insert({
@@ -247,7 +250,6 @@ export const actions: Actions = {
     return { success: true }
   },
 
-  // NEW action for employees to claim an unassigned ticket
   claimTicket: async ({ locals: { supabase, safeGetSession }, params }) => {
     const { session, user } = await safeGetSession()
     if (!session || !user) {
@@ -282,12 +284,10 @@ export const actions: Actions = {
       return fail(404, { errorMessage: "Ticket not found" })
     }
 
-    // claim only if unassigned
     if (ticket.assigned_to) {
       return fail(400, { errorMessage: "Ticket is already assigned" })
     }
 
-    // update
     const { error: updateErr } = await supabase
       .from("tickets")
       .update({ assigned_to: user.id, status: "in_progress" })

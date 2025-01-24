@@ -34,7 +34,6 @@
   let replies = data.replies
   let userRole = data.userRole
 
-  // If user is an admin, data.employeeOptions will be available.
   let employees = data.employeeOptions ?? []
 
   let replyLoading = false
@@ -44,9 +43,12 @@
   let claimLoading = false
   let claimError: string | null = null
 
+  // TinyMCE API key from environment
   const TINYMCE_API_KEY = publicEnv.PUBLIC_TINYMCE_API_KEY ?? ""
 
+  // This holds the rich-text content for a new reply
   let replyHtml = ""
+
   const editorConfig = {
     apiKey: TINYMCE_API_KEY,
     height: 300,
@@ -75,7 +77,7 @@
       "body { font-family:Helvetica,Arial,sans-serif; font-size:14px }",
   }
 
-  // For adding a reply
+  // Handle adding a new reply
   const handleAddReply: SubmitFunction = () => {
     replyLoading = true
     replyError = null
@@ -90,7 +92,7 @@
     }
   }
 
-  // For updating the ticket (status, priority, tags, assigned_to)
+  // Handle ticket updates (status, priority, tags, assigned_to)
   const handleUpdateTicket: SubmitFunction = () => {
     updateLoading = true
     updateError = null
@@ -105,7 +107,7 @@
     }
   }
 
-  // For employee to claim an unassigned ticket
+  // Employee/Admin: claim unassigned ticket
   const handleClaimTicket: SubmitFunction = () => {
     claimLoading = true
     claimError = null
@@ -123,7 +125,6 @@
   function canMarkInternal() {
     return userRole === "administrator" || userRole === "employee"
   }
-
   function canUpdateTicket() {
     return userRole === "administrator" || userRole === "employee"
   }
@@ -148,7 +149,7 @@
     {#each replies as r}
       <div
         class="border-l-4 pl-3 pb-2"
-        style="border-color: {r.is_internal ? '#ffaa00' : '#444'}"
+        style="border-color: {r.is_internal ? '#ffaa00' : '#444'};"
       >
         <p class="text-sm text-gray-600">
           {r.is_internal ? "Internal Note" : "Public Reply"}
@@ -158,7 +159,10 @@
             {/if}
           </span>
         </p>
-        <div class="mt-1" {...{ innerHTML: r.reply_text }}></div>
+        <!-- Use @html to render the stored HTML reply_text -->
+        <div class="mt-1">
+          {@html r.reply_text}
+        </div>
       </div>
     {/each}
     {#if replies.length === 0}
@@ -183,6 +187,8 @@
           bind:value={replyHtml}
           id="reply-editor"
         />
+
+        <!-- This hidden input is crucial for sending the replyHtml content to the server -->
         <input type="hidden" name="reply_text" value={replyHtml} />
 
         {#if canMarkInternal()}
@@ -295,7 +301,7 @@
           </label>
 
           {#if userRole === "administrator"}
-            <!-- Admin: can assign to any employee or admin in the org -->
+            <!-- Admin can assign to any employee or admin in the org -->
             <label class="block mb-2">
               <span class="text-sm font-semibold">Assigned To</span>
               <select
