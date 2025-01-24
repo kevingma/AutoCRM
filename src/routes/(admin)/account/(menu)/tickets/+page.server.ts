@@ -55,7 +55,8 @@ export const load: PageServerLoad = async ({
   }
 
   // Filter params
-  const statusParam = url.searchParams.get("status") || "open"
+  // CHANGED default from 'open' to 'all'
+  const statusParam = url.searchParams.get("status") || "all"
   const sortParam = url.searchParams.get("sort") || "desc"
   const priorityParam = url.searchParams.get("priority") || "all"
   const ascending = sortParam === "asc"
@@ -66,7 +67,7 @@ export const load: PageServerLoad = async ({
   let query = supabase.from("tickets").select("*").in("user_id", sharedUserIds)
 
   if (statusParam === "all") {
-    // no filter
+    // no filter for status
   } else if (statusParam === "open_and_in_progress") {
     query = query.in("status", ["open", "in_progress"])
   } else {
