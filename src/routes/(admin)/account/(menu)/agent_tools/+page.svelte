@@ -24,22 +24,27 @@
     }
   }
 
+  // Highlight the side-menu item
   let adminSection: Writable<string> = getContext("adminSection")
   adminSection.set("agent_tools")
 
+  // Possible error messages for create/edit/delete
   let createError: string | null = null
   let updateError: string | null = null
   let deleteError: string | null = null
 
+  // NEW TEMPLATE fields
   let newTitle = ""
   let newContent = ""
   let newIsShared = false
 
+  // EDITING an existing template
   let editingTemplateId: string | null = null
   let editingTitle = ""
   let editingContent = ""
   let editingIsShared = false
 
+  // Create Template
   const handleCreate: SubmitFunction = () => {
     createError = null
     return async ({ update, result }) => {
@@ -52,6 +57,7 @@
     }
   }
 
+  // Update Template
   const handleUpdate: SubmitFunction = () => {
     updateError = null
     return async ({ update, result }) => {
@@ -64,6 +70,7 @@
     }
   }
 
+  // Delete Template
   const handleDelete: SubmitFunction = () => {
     deleteError = null
     return async ({ update, result }) => {
@@ -76,6 +83,7 @@
     }
   }
 
+  // Start editing an existing template
   function startEditing(tmpl: {
     id: string
     title: string
@@ -96,11 +104,13 @@
 <div class="max-w-3xl mx-auto">
   <h1 class="text-2xl font-bold mb-4">Agent Tools</h1>
 
+  <!-- CREATE NEW TEMPLATE -->
   <h2 class="text-xl font-semibold mb-2">Create New Template</h2>
   <form method="POST" action="?/createTemplate" use:enhance={handleCreate}>
     <div class="mb-2">
-      <label class="block mb-1">Title</label>
+      <label for="newTemplateTitle" class="block mb-1">Title</label>
       <input
+        id="newTemplateTitle"
         type="text"
         name="title"
         bind:value={newTitle}
@@ -108,15 +118,16 @@
       />
     </div>
     <div class="mb-2">
-      <label class="block mb-1">Content</label>
+      <label for="newTemplateContent" class="block mb-1">Content</label>
       <textarea
+        id="newTemplateContent"
         name="content"
         rows="3"
         bind:value={newContent}
         class="textarea textarea-bordered w-full max-w-xl"
       ></textarea>
     </div>
-    <!-- Updated label to nest the input for a11y -->
+
     <label class="label cursor-pointer gap-2">
       <span class="label-text">Shared (visible to all employees)?</span>
       <input
@@ -134,41 +145,50 @@
     <button class="btn btn-primary btn-sm mt-2" type="submit">Create</button>
   </form>
 
+  <!-- YOUR PERSONAL TEMPLATES -->
   <div class="mt-8">
     <h2 class="text-xl font-semibold">Your Templates</h2>
     {#if data.personalTemplates.length === 0}
       <p class="text-gray-600 mt-2">No personal templates yet.</p>
     {:else}
-      {#each data.personalTemplates as tmpl}
+      {#each data.personalTemplates as tmpl (tmpl.id)}
         <div class="card shadow mb-4">
           <div class="card-body">
             {#if tmpl.id === editingTemplateId}
-              <!-- Edit form -->
+              <!-- EDIT form -->
               <form
                 method="POST"
                 action="?/updateTemplate"
                 use:enhance={handleUpdate}
               >
                 <input type="hidden" name="id" value={tmpl.id} />
+
                 <div class="mb-2">
-                  <label class="block mb-1">Title</label>
+                  <label for="editTitle_{tmpl.id}" class="block mb-1"
+                    >Title</label
+                  >
                   <input
+                    id="editTitle_{tmpl.id}"
                     type="text"
                     name="title"
                     bind:value={editingTitle}
                     class="input input-bordered w-full max-w-xl"
                   />
                 </div>
+
                 <div class="mb-2">
-                  <label class="block mb-1">Content</label>
+                  <label for="editContent_{tmpl.id}" class="block mb-1"
+                    >Content</label
+                  >
                   <textarea
+                    id="editContent_{tmpl.id}"
                     name="content"
                     rows="3"
                     bind:value={editingContent}
                     class="textarea textarea-bordered w-full max-w-xl"
                   ></textarea>
                 </div>
-                <!-- Updated label to nest the input for a11y -->
+
                 <label class="label cursor-pointer gap-2">
                   <span class="label-text">Shared?</span>
                   <input
@@ -179,9 +199,11 @@
                     class="checkbox"
                   />
                 </label>
+
                 {#if updateError}
                   <div class="text-red-600 mt-1">{updateError}</div>
                 {/if}
+
                 <div class="mt-2 space-x-2">
                   <button class="btn btn-sm btn-primary" type="submit">
                     Save
@@ -196,7 +218,7 @@
                 </div>
               </form>
             {:else}
-              <!-- View mode -->
+              <!-- VIEW mode -->
               <div class="flex flex-row items-start justify-between">
                 <div>
                   <h3 class="card-title font-semibold text-lg">{tmpl.title}</h3>
@@ -233,13 +255,13 @@
     {/if}
   </div>
 
-  <!-- Shared Templates Section -->
+  <!-- SHARED TEMPLATES -->
   <div class="mt-8">
     <h2 class="text-xl font-semibold">Shared Templates</h2>
     {#if data.sharedTemplates.length === 0}
       <p class="text-gray-600 mt-2">No shared templates found.</p>
     {:else}
-      {#each data.sharedTemplates as tmpl}
+      {#each data.sharedTemplates as tmpl (tmpl.id)}
         <div class="card shadow mb-2">
           <div class="card-body">
             <h3 class="card-title font-semibold text-lg">{tmpl.title}</h3>

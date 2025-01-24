@@ -425,6 +425,40 @@ export interface Database {
           },
         ]
       }
+      response_templates: {
+        Row: {
+          id: string
+          user_id: string
+          created_at: string | null
+          title: string
+          content: string
+          is_shared: boolean
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          created_at?: string | null
+          title: string
+          content: string
+          is_shared?: boolean
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          created_at?: string | null
+          title?: string
+          content?: string
+          is_shared?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "response_templates_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: { [_ in never]: never }
     Functions: { [_ in never]: never }

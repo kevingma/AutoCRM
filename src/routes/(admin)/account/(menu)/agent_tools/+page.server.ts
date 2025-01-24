@@ -10,7 +10,7 @@ export const load: PageServerLoad = async ({
   }
 
   // Confirm role is employee or admin
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("role, company_name, website")
     .eq("id", user.id)
@@ -23,7 +23,7 @@ export const load: PageServerLoad = async ({
     throw redirect(303, "/account")
   }
 
-  // Load personal templates:
+  // Load personal templates (owned by the user)
   const { data: personalTemplates, error: ptError } = await supabase
     .from("response_templates")
     .select("*")
@@ -34,13 +34,16 @@ export const load: PageServerLoad = async ({
     console.error("Error loading personal templates", ptError)
   }
 
-  // Optionally load shared templates for the same company if we wanted. For brevity, let's skip or do it:
-  const { data: sharedTemplates } = await supabase
+  // Load shared templates (is_shared = true)
+  const { data: sharedTemplates, error: stError } = await supabase
     .from("response_templates")
     .select("*")
-    .eq("is_shared", true) // see the same global or team-based
-    // In a multi-tenant scenario, you'd also match company_name/website or do a join. We'll skip for now
+    .eq("is_shared", true)
     .order("created_at", { ascending: false })
+
+  if (stError) {
+    console.error("Error loading shared templates", stError)
+  }
 
   return {
     personalTemplates: personalTemplates ?? [],
@@ -54,6 +57,21 @@ export const actions: Actions = {
     if (!session || !user) {
       throw redirect(303, "/login")
     }
+
+    // Double-check role
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single()
+
+    if (
+      !profile ||
+      (profile.role !== "employee" && profile.role !== "administrator")
+    ) {
+      return fail(403, { error: "Not authorized" })
+    }
+
     const formData = await request.formData()
     const title = formData.get("title")?.toString() || ""
     const content = formData.get("content")?.toString() || ""
@@ -85,6 +103,21 @@ export const actions: Actions = {
     if (!session || !user) {
       throw redirect(303, "/login")
     }
+
+    // Double-check role
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single()
+
+    if (
+      !profile ||
+      (profile.role !== "employee" && profile.role !== "administrator")
+    ) {
+      return fail(403, { error: "Not authorized" })
+    }
+
     const formData = await request.formData()
     const templateId = formData.get("id")?.toString() || ""
     const title = formData.get("title")?.toString() || ""
@@ -98,7 +131,7 @@ export const actions: Actions = {
       return fail(400, { error: "Title and content must be at least 3 chars" })
     }
 
-    // Ensure user owns it or it's shared. A more secure approach uses RLS, but let's do a check here:
+    // Ensure user owns this template
     const { data: existing } = await supabase
       .from("response_templates")
       .select("user_id")
@@ -127,6 +160,21 @@ export const actions: Actions = {
     if (!session || !user) {
       throw redirect(303, "/login")
     }
+
+    // Double-check role
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single()
+
+    if (
+      !profile ||
+      (profile.role !== "employee" && profile.role !== "administrator")
+    ) {
+      return fail(403, { error: "Not authorized" })
+    }
+
     const formData = await request.formData()
     const templateId = formData.get("id")?.toString() || ""
 
@@ -134,8 +182,7 @@ export const actions: Actions = {
       return fail(400, { error: "No template id provided." })
     }
 
-    // Ensure user owns it or it's shared (though normally they'd only be allowed to delete if they own it)
-    // We'll do a quick check:
+    // Ensure user owns it
     const { data: existing } = await supabase
       .from("response_templates")
       .select("user_id")
