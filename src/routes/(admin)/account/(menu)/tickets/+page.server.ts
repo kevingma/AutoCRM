@@ -81,7 +81,7 @@ export const load: PageServerLoad = async ({
   if (searchParam) {
     const likePattern = `%${searchParam}%`
     query = query.or(
-      `title.ilike.${likePattern},description.ilike.${likePattern},tags::text.ilike.${likePattern}`
+      `title.ilike.${likePattern},description.ilike.${likePattern},tags::text.ilike.${likePattern}`,
     )
   }
 
