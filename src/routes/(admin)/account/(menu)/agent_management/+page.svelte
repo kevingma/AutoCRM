@@ -321,6 +321,12 @@
                       Remove
                     </button>
                   </form>
+                  <a
+                    href={`/account/agent_management/${a.id}`}
+                    class="btn btn-sm btn-outline"
+                  >
+                    View Stats
+                  </a>
                 </td>
               </tr>
             {/each}

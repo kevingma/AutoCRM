@@ -243,10 +243,15 @@ export const actions: Actions = {
       return fail(400, { errorMessage: "Missing user or team." })
     }
 
-    // Insert or ignore if already exists
+    const generatedId = crypto.randomUUID()
+
     const { error: insertError } = await supabaseServiceRole
       .from("team_members")
-      .insert({ user_id: targetUserId, team_id: teamId })
+      .insert({
+        id: generatedId, // <-- ensure we supply an ID if needed
+        user_id: targetUserId,
+        team_id: teamId,
+      })
 
     if (insertError && !insertError.message.includes("duplicate key")) {
       return fail(500, { errorMessage: "Failed to assign team." })
