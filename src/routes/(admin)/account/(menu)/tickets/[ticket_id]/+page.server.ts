@@ -125,7 +125,11 @@ export const load: PageServerLoad = async ({
 }
 
 export const actions: Actions = {
-  addReply: async ({ request, locals: { supabase, safeGetSession }, params }) => {
+  addReply: async ({
+    request,
+    locals: { supabase, safeGetSession },
+    params,
+  }) => {
     const { session, user } = await safeGetSession()
     if (!session || !user) {
       throw redirect(303, "/login")
