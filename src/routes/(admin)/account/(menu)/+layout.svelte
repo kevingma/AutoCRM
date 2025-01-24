@@ -61,6 +61,7 @@
     <ul
       class="menu p-4 w-64 min-h-full bg-base-100 lg:border-r text-sm text-primary"
     >
+      <!-- Home -->
       <li>
         <div
           class="normal-case menu-title text-xl font-bold text-primary flex flex-row"
@@ -70,7 +71,7 @@
         </div>
       </li>
 
-      <!-- Home -->
+      <!-- Home (always visible) -->
       <li>
         <a
           href="/account"
@@ -99,71 +100,8 @@
         </a>
       </li>
 
-      <!-- Tickets -->
-      <li>
-        <a
-          href="/account/tickets"
-          class={adminSectionValue === "tickets" ? "active" : ""}
-          onclick={closeDrawer}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke-width="1.5"
-            stroke="currentColor"
-            class="size-6"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M16.5 6v.75m0 3v.75m0 3v.75m0 
-               3V18m-9-5.25h5.25M7.5 15h3M3.375 
-               5.25c-.621 0-1.125.504-1.125 
-               1.125v3.026a2.999 2.999 0 0 1 
-               0 5.198v3.026c0 .621.504 1.125 
-               1.125 1.125h17.25c.621 0 1.125-.504 
-               1.125-1.125v-3.026a2.999 2.999 0 
-               0 1 0-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375Z"
-            />
-          </svg>
-          Tickets
-        </a>
-      </li>
-
-      <!-- Billing -->
-      <li>
-        <a
-          href="/account/billing"
-          class={adminSectionValue === "billing" ? "active" : ""}
-          onclick={closeDrawer}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke-width="1.5"
-            stroke="currentColor"
-            class="size-6"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M2.25 8.25h19.5M2.25 
-               9h19.5m-16.5 5.25h6m-6 
-               2.25h3m-3.75 3h15a2.25 2.25 
-               0 0 0 2.25-2.25V6.75A2.25 2.25 
-               0 0 0 19.5 4.5h-15a2.25 2.25 
-               0 0 0-2.25 2.25v10.5A2.25 
-               2.25 0 0 0 4.5 19.5Z"
-            />
-          </svg>
-          Billing
-        </a>
-      </li>
-
+      <!-- Agent Management (Admin only) -->
       {#if userRole === "administrator"}
-        <!-- Agent Management -->
         <li>
           <a
             href="/account/agent_management"
@@ -184,8 +122,7 @@
                 d="M15.75 
                  6a3.75 3.75 0 1 1-7.5 
                  0 3.75 3.75 0 0 1 7.5 
-                 0ZM4.501 20.118a7.5 
-                 7.5 0 0 1 14.998 0A17.933 
+                 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 
                  17.933 0 0 1 12 21.75c-2.676 
                  0-5.216-.584-7.499-1.632Z"
               />
@@ -193,8 +130,10 @@
             Agent Management
           </a>
         </li>
+      {/if}
 
-        <!-- Teams -->
+      <!-- Teams (Admin only) -->
+      {#if userRole === "administrator"}
         <li>
           <a
             href="/account/teams"
@@ -232,8 +171,8 @@
                  5.971 0 0 0-.94 
                  3.197M15 
                  6.75a3 3 0 1 
-                 1-6 0 3 3 0 0 
-                 1 6 
+                 1-6 0 3 3 0 
+                 0 1 6 
                  0Zm6 
                  3a2.25 2.25 0 1 
                  1-4.5 0 2.25 2.25 0 0 1 
@@ -248,15 +187,11 @@
         </li>
       {/if}
 
-      <li class="my-2">
-        <div class="divider"></div>
-      </li>
-
-      <!-- Knowledge Base -->
+      <!-- Tickets (visible to all roles) -->
       <li>
         <a
-          href="/account/knowledge_base"
-          class={adminSectionValue === "knowledge_base" ? "active" : ""}
+          href="/account/tickets"
+          class={adminSectionValue === "tickets" ? "active" : ""}
           onclick={closeDrawer}
         >
           <svg
@@ -270,25 +205,22 @@
             <path
               stroke-linecap="round"
               stroke-linejoin="round"
-              d="M19.5 
-               14.25v-2.625a3.375 3.375 0 
-               0 0-3.375-3.375h-1.5A1.125 1.125 
-               0 0 1 13.5 7.125v-1.5a3.375 
-               3.375 0 0 0-3.375-3.375H8.25m0 
-               12.75h7.5m-7.5 3H12M10.5 
-               2.25H5.625c-.621 0-1.125.504-1.125 
-               1.125v17.25c0 
-               .621.504 1.125 1.125 1.125h12.75c.621 
-               0 1.125-.504 1.125-1.125V11.25a9 
-               9 0 0 0-9-9Z"
+              d="M16.5 6v.75m0 3v.75m0 3v.75m0 
+               3V18m-9-5.25h5.25M7.5 15h3M3.375 
+               5.25c-.621 0-1.125.504-1.125 
+               1.125v3.026a2.999 2.999 0 0 1 
+               0 5.198v3.026c0 .621.504 1.125 
+               1.125 1.125h17.25c.621 0 1.125-.504 
+               1.125-1.125v-3.026a2.999 2.999 0 
+               0 1 0-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375Z"
             />
           </svg>
-          Knowledge Base
+          Tickets
         </a>
       </li>
 
+      <!-- Live Chat (Customer) -->
       {#if userRole === "customer"}
-        <!-- Live Chat for customers -->
         <li>
           <a
             href="/account/live_chat"
@@ -324,8 +256,8 @@
         </li>
       {/if}
 
+      <!-- Agent Live Chat (Employee or Admin) -->
       {#if userRole === "employee" || userRole === "administrator"}
-        <!-- Agent Live Chat -->
         <li>
           <a
             href="/account/live_chat_agent"
@@ -360,7 +292,7 @@
           </a>
         </li>
 
-        <!-- NEW: Agent Tools link -->
+        <!-- Agent Tools (Employee or Admin) -->
         <li>
           <a
             href="/account/agent_tools"
@@ -378,7 +310,10 @@
               <path
                 stroke-linecap="round"
                 stroke-linejoin="round"
-                d="M21.75 6.75a4.5 4.5 0 0 1-4.884 4.484c-1.076-.091-2.264.071-2.95.904l-7.152 8.684a2.548 2.548 0 1 1-3.586-3.586l8.684-7.152c.833-.686.995-1.874.904-2.95a4.5 4.5 0 0 1 6.336-4.486l-3.276 3.276a3.004 3.004 0 0 0 2.25 2.25l3.276-3.276c.256.565.398 1.192.398 1.852Z"
+                d="M21.75 6.75a4.5 4.5 0 0 1-4.884 4.484c-1.076-.091-2.264.071-2.95.904l-7.152 8.684a2.548 
+                 2.548 0 1 1-3.586-3.586l8.684-7.152c.833-.686.995-1.874.904-2.95a4.5 
+                 4.5 0 0 1 6.336-4.486l-3.276 3.276a3.004 3.004 0 0 0 2.25 
+                 2.25l3.276-3.276c.256.565.398 1.192.398 1.852Z"
               />
               <path
                 stroke-linecap="round"
@@ -391,8 +326,78 @@
         </li>
       {/if}
 
+      <li class="my-2">
+        <div class="divider"></div>
+      </li>
+
+      <!-- Knowledge Base (all roles) -->
+      <li>
+        <a
+          href="/account/knowledge_base"
+          class={adminSectionValue === "knowledge_base" ? "active" : ""}
+          onclick={closeDrawer}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="1.5"
+            stroke="currentColor"
+            class="size-6"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M19.5 
+               14.25v-2.625a3.375 3.375 0 
+               0 0-3.375-3.375h-1.5A1.125 1.125 
+               0 0 1 13.5 7.125v-1.5a3.375 
+               3.375 0 0 0-3.375-3.375H8.25m0 
+               12.75h7.5m-7.5 3H12M10.5 
+               2.25H5.625c-.621 0-1.125.504-1.125 
+               1.125v17.25c0 
+               .621.504 1.125 1.125 1.125h12.75c.621 
+               0 1.125-.504 1.125-1.125V11.25a9 
+               9 0 0 0-9-9Z"
+            />
+          </svg>
+          Knowledge Base
+        </a>
+      </li>
+
+      <!-- Billing (all roles) -->
+      <li>
+        <a
+          href="/account/billing"
+          class={adminSectionValue === "billing" ? "active" : ""}
+          onclick={closeDrawer}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="1.5"
+            stroke="currentColor"
+            class="size-6"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M2.25 8.25h19.5M2.25 
+               9h19.5m-16.5 5.25h6m-6 
+               2.25h3m-3.75 3h15a2.25 2.25 
+               0 0 0 2.25-2.25V6.75A2.25 2.25 
+               0 0 0 19.5 4.5h-15a2.25 2.25 
+               0 0 0-2.25 2.25v10.5A2.25 
+               2.25 0 0 0 4.5 19.5Z"
+            />
+          </svg>
+          Billing
+        </a>
+      </li>
+
+      <!-- Settings and Sign out (always at bottom) -->
       <li class="mt-auto flex flex-row items-center gap-4">
-        <!-- Settings -->
         <a
           href="/account/settings"
           class={adminSectionValue === "settings" ? "active" : ""}
