@@ -55,6 +55,7 @@
     "@tiptap/pm": "^2.11.3",
     "@tiptap/starter-kit": "^2.11.3",
     "handlebars": "^4.7.8",
+    "langchain-core": "^0.0.4",
     "openai": "^4.80.0",
     "resend": "^3.5.0",
     "stripe": "^13.3.0",
