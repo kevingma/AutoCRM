@@ -11,11 +11,14 @@ import type { Database } from "../../DatabaseDefinitions"
 /**
  * Updates the status or priority of a ticket.
  */
-export async function updateTicketTool(params: {
-  ticketId: string
-  status?: string
-  priority?: string
-}, supabase: SupabaseClient<Database>) {
+export async function updateTicketTool(
+  params: {
+    ticketId: string
+    status?: string
+    priority?: string
+  },
+  supabase: SupabaseClient<Database>,
+) {
   // Modify this to do partial updates if you'd like
   const updates: Record<string, unknown> = {}
   if (params.status) updates.status = params.status
@@ -40,22 +43,23 @@ export async function updateTicketTool(params: {
 /**
  * Adds an internal or public reply to a ticket.
  */
-export async function replyTicketTool(params: {
-  ticketId: string
-  replyText: string
-  isInternal?: boolean
-}, supabase: SupabaseClient<Database>) {
+export async function replyTicketTool(
+  params: {
+    ticketId: string
+    replyText: string
+    isInternal?: boolean
+  },
+  supabase: SupabaseClient<Database>,
+) {
   if (!params.replyText) {
     return "No reply text provided."
   }
-  const { error } = await supabase
-    .from("ticket_replies")
-    .insert({
-      ticket_id: params.ticketId,
-      user_id: "agent-ai", // or a specific user ID if needed
-      reply_text: params.replyText,
-      is_internal: params.isInternal ?? false,
-    })
+  const { error } = await supabase.from("ticket_replies").insert({
+    ticket_id: params.ticketId,
+    user_id: "agent-ai", // or a specific user ID if needed
+    reply_text: params.replyText,
+    is_internal: params.isInternal ?? false,
+  })
 
   if (error) {
     return `Failed to add reply. Error: ${error.message}`
@@ -66,10 +70,13 @@ export async function replyTicketTool(params: {
 /**
  * Example of assigning a ticket to a specific user (employee).
  */
-export async function assignAgentTool(params: {
-  ticketId: string
-  userId: string
-}, supabase: SupabaseClient<Database>) {
+export async function assignAgentTool(
+  params: {
+    ticketId: string
+    userId: string
+  },
+  supabase: SupabaseClient<Database>,
+) {
   const { error } = await supabase
     .from("tickets")
     .update({ assigned_to: params.userId, status: "in_progress" })
@@ -84,11 +91,14 @@ export async function assignAgentTool(params: {
 /**
  * Example: changing an employee's role or adding them to a team, etc.
  */
-export async function manageEmployeeTool(params: {
-  userId: string
-  newRole?: string
-  teamId?: string
-}, supabase: SupabaseClient<Database>) {
+export async function manageEmployeeTool(
+  params: {
+    userId: string
+    newRole?: string
+    teamId?: string
+  },
+  supabase: SupabaseClient<Database>,
+) {
   // This is just a stub:
   if (params.newRole) {
     const { error } = await supabase

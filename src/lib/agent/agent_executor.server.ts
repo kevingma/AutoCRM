@@ -1,7 +1,12 @@
 import { env as privateEnv } from "$env/dynamic/private"
 import { env as publicEnv } from "$env/dynamic/public"
 import { createClient } from "@supabase/supabase-js"
-import { updateTicketTool, replyTicketTool, assignAgentTool, manageEmployeeTool } from "./agent_tools.server"
+import {
+  updateTicketTool,
+  replyTicketTool,
+  assignAgentTool,
+  manageEmployeeTool,
+} from "./agent_tools.server"
 
 /**
  * If using official LangChain and OpenAI function calling, you'd integrate similarly to the next.js example.

@@ -6,7 +6,7 @@ export const load: PageServerLoad = async () => {
   // You can later fetch stored conversation if desired.
   // For now, we just return an empty array for the initial page data.
   return {
-    messages: []
+    messages: [],
   }
 }
 
@@ -29,11 +29,11 @@ export const actions: Actions = {
       const responseText = await handleAgentMessage(userMessage)
       return {
         success: true,
-        response: responseText
+        response: responseText,
       }
     } catch (err) {
       console.error("Agent error:", err)
       return fail(500, { error: "Agent failed to respond." })
     }
-  }
+  },
 }
