@@ -24,7 +24,6 @@
     }
   }
 
-  // Highlight the side-menu item
   let adminSection: Writable<string> = getContext("adminSection")
   adminSection.set("agent_tools")
 
@@ -271,5 +270,16 @@
         </div>
       {/each}
     {/if}
+  </div>
+
+  <!-- Agentic AI Tool Button -->
+  <div class="card shadow mt-8">
+    <div class="card-body">
+      <h2 class="card-title text-lg">Agentic AI Tool</h2>
+      <p class="text-sm">
+        Chat with the AI agent to manage tickets, employees, or other tasks.
+      </p>
+      <a href="/account/agent_ai" class="btn btn-accent mt-2">Open AI Chat</a>
+    </div>
   </div>
 </div>
