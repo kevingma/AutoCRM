@@ -46,15 +46,20 @@
   },
   "type": "module",
   "dependencies": {
+    "@langchain/community": "^0.3.27",
+    "@langchain/core": "^0.3.36",
+    "@langchain/langgraph": "^0.2.42",
+    "@langchain/openai": "^0.4.2",
     "@supabase/auth-ui-svelte": "^0.2.9",
     "@supabase/ssr": "^0.5.2",
-    "@supabase/supabase-js": "^2.45.2",
+    "@supabase/supabase-js": "^2.48.1",
     "@tinymce/tinymce-svelte": "^3.0.0",
     "@tiptap/core": "^2.11.3",
     "@tiptap/extension-placeholder": "^2.11.3",
     "@tiptap/pm": "^2.11.3",
     "@tiptap/starter-kit": "^2.11.3",
     "handlebars": "^4.7.8",
+    "langchain": "^0.3.14",
     "langchain-core": "^0.0.4",
     "openai": "^4.80.0",
     "resend": "^3.5.0",
@@ -71,5 +76,6 @@
     "@sveltejs/kit": {
       "cookie": "^0.7.0"
     }
-  }
+  },
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }

@@ -77,7 +77,7 @@ export interface Database {
             columns: ["id"]
             referencedRelation: "users"
             referencedColumns: ["id"]
-          },
+          }
         ]
       }
       stripe_customers: {
@@ -102,7 +102,7 @@ export interface Database {
             columns: ["user_id"]
             referencedRelation: "users"
             referencedColumns: ["id"]
-          },
+          }
         ]
       }
       tickets: {
@@ -148,7 +148,7 @@ export interface Database {
             columns: ["user_id"]
             referencedRelation: "users"
             referencedColumns: ["id"]
-          },
+          }
         ]
       }
       ticket_replies: {
@@ -188,10 +188,9 @@ export interface Database {
             columns: ["user_id"]
             referencedRelation: "users"
             referencedColumns: ["id"]
-          },
+          }
         ]
       }
-
       ticket_feedback: {
         Row: {
           id: string
@@ -229,7 +228,7 @@ export interface Database {
             columns: ["user_id"]
             referencedRelation: "users"
             referencedColumns: ["id"]
-          },
+          }
         ]
       }
       live_chats: {
@@ -269,7 +268,7 @@ export interface Database {
             columns: ["agent_id"]
             referencedRelation: "users"
             referencedColumns: ["id"]
-          },
+          }
         ]
       }
       live_chat_messages: {
@@ -309,7 +308,7 @@ export interface Database {
             columns: ["user_id"]
             referencedRelation: "users"
             referencedColumns: ["id"]
-          },
+          }
         ]
       }
       teams: {
@@ -339,7 +338,6 @@ export interface Database {
         }
         Relationships: []
       }
-
       team_members: {
         Row: {
           id: string
@@ -371,10 +369,9 @@ export interface Database {
             columns: ["user_id"]
             referencedRelation: "users"
             referencedColumns: ["id"]
-          },
+          }
         ]
       }
-
       skills: {
         Row: {
           id: string
@@ -393,7 +390,6 @@ export interface Database {
         }
         Relationships: []
       }
-
       employee_skills: {
         Row: {
           id: string
@@ -422,47 +418,80 @@ export interface Database {
             columns: ["skill_id"]
             referencedRelation: "skills"
             referencedColumns: ["id"]
-          },
+          }
         ]
-      }
-      response_templates: {
+      },
+
+      /* -------------------- NEW TABLE: response_drafts -------------------- */
+      response_drafts: {
         Row: {
           id: string
+          ticket_id: string
           user_id: string
-          created_at: string | null
-          title: string
           content: string
-          is_shared: boolean
+          status: string
+          approved_by: string | null
+          approved_at: string | null
+          modified_content: string | null
+          feedback: string | null
+          created_at: string | null
+          grade: unknown | null
+          metadata: unknown | null
         }
         Insert: {
           id?: string
+          ticket_id: string
           user_id: string
-          created_at?: string | null
-          title: string
           content: string
-          is_shared?: boolean
+          status?: string
+          approved_by?: string | null
+          approved_at?: string | null
+          modified_content?: string | null
+          feedback?: string | null
+          created_at?: string | null
+          grade?: unknown | null
+          metadata?: unknown | null
         }
         Update: {
           id?: string
+          ticket_id?: string
           user_id?: string
-          created_at?: string | null
-          title?: string
           content?: string
-          is_shared?: boolean
+          status?: string
+          approved_by?: string | null
+          approved_at?: string | null
+          modified_content?: string | null
+          feedback?: string | null
+          created_at?: string | null
+          grade?: unknown | null
+          metadata?: unknown | null
         }
         Relationships: [
           {
-            foreignKeyName: "response_templates_user_id_fkey"
+            foreignKeyName: "response_drafts_ticket_id_fkey"
+            columns: ["ticket_id"]
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "response_drafts_user_id_fkey"
             columns: ["user_id"]
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "response_drafts_approved_by_fkey"
+            columns: ["approved_by"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
         ]
       }
+      /* -------------------- end of new table -------------------- */
     }
-    Views: { [_ in never]: never }
-    Functions: { [_ in never]: never }
-    Enums: { [_ in never]: never }
-    CompositeTypes: { [_ in never]: never }
+    Views: { [key: string]: never }
+    Functions: { [key: string]: never }
+    Enums: { [key: string]: never }
+    CompositeTypes: { [key: string]: never }
   }
 }
