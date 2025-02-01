@@ -1,6 +1,6 @@
-import { ChatOpenAI } from '@langchain/openai'
-import { StringOutputParser } from '@langchain/core/output_parsers'
-import { PromptTemplate } from '@langchain/core/prompts'
+import { ChatOpenAI } from "@langchain/openai"
+import { StringOutputParser } from "@langchain/core/output_parsers"
+import { PromptTemplate } from "@langchain/core/prompts"
 
 /**
  * Auto-response prompt, more advanced style
@@ -27,7 +27,7 @@ export class AutoResponderService {
 
   constructor() {
     this.llm = new ChatOpenAI({
-      modelName: 'gpt-4',
+      modelName: "gpt-4",
       temperature: 0.7,
       openAIApiKey: process.env.OPENAI_API_KEY,
     })

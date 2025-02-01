@@ -77,7 +77,7 @@ export interface Database {
             columns: ["id"]
             referencedRelation: "users"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       stripe_customers: {
@@ -102,7 +102,7 @@ export interface Database {
             columns: ["user_id"]
             referencedRelation: "users"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       tickets: {
@@ -148,7 +148,7 @@ export interface Database {
             columns: ["user_id"]
             referencedRelation: "users"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       ticket_replies: {
@@ -188,7 +188,7 @@ export interface Database {
             columns: ["user_id"]
             referencedRelation: "users"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       ticket_feedback: {
@@ -228,7 +228,7 @@ export interface Database {
             columns: ["user_id"]
             referencedRelation: "users"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       live_chats: {
@@ -268,7 +268,7 @@ export interface Database {
             columns: ["agent_id"]
             referencedRelation: "users"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       live_chat_messages: {
@@ -308,7 +308,7 @@ export interface Database {
             columns: ["user_id"]
             referencedRelation: "users"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       teams: {
@@ -369,7 +369,7 @@ export interface Database {
             columns: ["user_id"]
             referencedRelation: "users"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       skills: {
@@ -418,9 +418,9 @@ export interface Database {
             columns: ["skill_id"]
             referencedRelation: "skills"
             referencedColumns: ["id"]
-          }
+          },
         ]
-      },
+      }
 
       /* -------------------- NEW TABLE: response_drafts -------------------- */
       response_drafts: {
@@ -484,7 +484,7 @@ export interface Database {
             columns: ["approved_by"]
             referencedRelation: "users"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       /* -------------------- end of new table -------------------- */

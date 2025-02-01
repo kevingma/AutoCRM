@@ -1,7 +1,7 @@
-import { ChatOpenAI } from '@langchain/openai'
-import { StringOutputParser } from '@langchain/core/output_parsers'
-import { PromptTemplate } from '@langchain/core/prompts'
-import { z } from 'zod'
+import { ChatOpenAI } from "@langchain/openai"
+import { StringOutputParser } from "@langchain/core/output_parsers"
+import { PromptTemplate } from "@langchain/core/prompts"
+import { z } from "zod"
 
 /**
  * JSON schema for grading results
@@ -52,9 +52,9 @@ export class ResponseGraderService {
 
   constructor() {
     this.llm = new ChatOpenAI({
-      modelName: 'gpt-4',
+      modelName: "gpt-4",
       temperature: 0.2,
-      openAIApiKey: process.env.OPENAI_API_KEY
+      openAIApiKey: process.env.OPENAI_API_KEY,
     })
     this.graderPrompt = PromptTemplate.fromTemplate(GRADER_PROMPT)
   }
@@ -74,7 +74,7 @@ export class ResponseGraderService {
     const raw = await chain.invoke({
       context: params.context,
       userMessage: params.userMessage,
-      draftReply: params.draftReply
+      draftReply: params.draftReply,
     })
 
     // parse raw JSON
@@ -86,7 +86,7 @@ export class ResponseGraderService {
       return {
         quality_score: 3,
         accuracy_score: 3,
-        summary: 'Parsing error, fallback to 3/3',
+        summary: "Parsing error, fallback to 3/3",
         concerns: [],
       }
     }
@@ -98,7 +98,7 @@ export class ResponseGraderService {
       return {
         quality_score: 3,
         accuracy_score: 3,
-        summary: 'Invalid schema, fallback to 3/3',
+        summary: "Invalid schema, fallback to 3/3",
         concerns: [],
       }
     }
