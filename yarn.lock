@@ -2598,10 +2598,10 @@ langsmith@^0.0.48:
     p-retry "4"
     uuid "^9.0.0"
 
-"langsmith@>=0.2.8 <0.4.0":
-  version "0.3.3"
-  resolved "https://registry.npmjs.org/langsmith/-/langsmith-0.3.3.tgz"
-  integrity sha512-B9B0ThaPYwNdTg9ck6bWF2Mjd1TJvVKLfLedufIudmO8aPDslcc2uVlyPEtskZFEdmfjfVHEqDnhnuAhyifrZQ==
+langsmith@^0.3.4, "langsmith@>=0.2.8 <0.4.0":
+  version "0.3.4"
+  resolved "https://registry.npmjs.org/langsmith/-/langsmith-0.3.4.tgz"
+  integrity sha512-Klyy7HtOEh3RqQsKStUfVwE8NMrLCp1+ng50ddeEjJyF5WI+LsgBDIpJGRVjmgNbNeX+rGnUk0kBKIU5gZjVFQ==
   dependencies:
     "@types/uuid" "^10.0.0"
     chalk "^4.1.2"
